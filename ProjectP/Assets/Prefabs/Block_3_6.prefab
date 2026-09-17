@@ -53,6 +53,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Block
   pieces:
   - {fileID: 5868485687563831057}
+  - {fileID: 1173072193790953190}
+  - {fileID: 1632759465320892453}
   core: {fileID: 5868485687563831057}
 --- !u!1001 &1740630929567041564
 PrefabInstance:
@@ -151,6 +153,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 37859a142b6bbf04f843976b493d3d78, type: 3}
+--- !u!1 &1632759465320892453 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1049141413385404473, guid: 37859a142b6bbf04f843976b493d3d78, type: 3}
+  m_PrefabInstance: {fileID: 1740630929567041564}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &6021620599217575453 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5455810353553153537, guid: 37859a142b6bbf04f843976b493d3d78, type: 3}
@@ -253,6 +260,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 37859a142b6bbf04f843976b493d3d78, type: 3}
+--- !u!1 &1173072193790953190 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1049141413385404473, guid: 37859a142b6bbf04f843976b493d3d78, type: 3}
+  m_PrefabInstance: {fileID: 2218263057106290399}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &6160419490461800670 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5455810353553153537, guid: 37859a142b6bbf04f843976b493d3d78, type: 3}
