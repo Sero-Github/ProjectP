@@ -10,6 +10,7 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     private RectTransform rectTransform;
     private Canvas rootCanvas;
     private Camera eventCamera;
+    private Vector2 defaultSizeDelta;
 
     private Transform originalParent;
     private int originalSiblingIndex;
@@ -26,6 +27,7 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     private void Awake()
     {
         rectTransform = (RectTransform)transform;
+        defaultSizeDelta = rectTransform.sizeDelta;
         RefreshRootCanvas();
     }
 
@@ -59,6 +61,76 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         return offsets;
     }
 
+    public Vector2 GetFootprintSize(float cellSize)
+    {
+        var offsets = GetPieceOffsets(cellSize);
+
+        if (offsets.Count == 0)
+        {
+            return new Vector2(cellSize, cellSize);
+        }
+
+        int minX = int.MaxValue, maxX = int.MinValue;
+        int minY = int.MaxValue, maxY = int.MinValue;
+
+        foreach (var offset in offsets)
+        {
+            minX = Mathf.Min(minX, offset.x);
+            maxX = Mathf.Max(maxX, offset.x);
+            minY = Mathf.Min(minY, offset.y);
+            maxY = Mathf.Max(maxY, offset.y);
+        }
+
+        float width = (maxX - minX + 1) * cellSize;
+        float height = (maxY - minY + 1) * cellSize;
+        return new Vector2(width, height);
+    }
+
+    public void SetDisplayScale(float scale)
+    {
+        rectTransform.localScale = new Vector3(scale, scale, 1f);
+    }
+
+    // Inventory의 HorizontalLayoutGroup은 자식의 sizeDelta/pivot을 그대로 믿고 세로 중앙 정렬을 계산한다.
+    // 모든 블록 프리팹의 루트 sizeDelta/pivot이 모양과 무관하게 고정되어 있어서 그대로 두면
+    // core를 기준으로 비대칭인 모양일수록 정렬이 어긋나 보인다. 조각들의 실제 경계 박스에 맞춰
+    // sizeDelta/pivot을 보정해 레이아웃 그룹이 "진짜 그림"을 기준으로 정렬하게 만든다.
+    public void NormalizeVisualBounds(float cellSize)
+    {
+        if (pieces == null || pieces.Count == 0)
+        {
+            return;
+        }
+
+        float minX = float.MaxValue, maxX = float.MinValue;
+        float minY = float.MaxValue, maxY = float.MinValue;
+
+        foreach (var piece in pieces)
+        {
+            Vector2 piecePosition = ((RectTransform)piece.transform).anchoredPosition;
+
+            minX = Mathf.Min(minX, piecePosition.x - cellSize / 2f);
+            maxX = Mathf.Max(maxX, piecePosition.x + cellSize / 2f);
+            minY = Mathf.Min(minY, piecePosition.y - cellSize / 2f);
+            maxY = Mathf.Max(maxY, piecePosition.y + cellSize / 2f);
+        }
+
+        float width = maxX - minX;
+        float height = maxY - minY;
+
+        if (width <= 0f || height <= 0f)
+        {
+            return;
+        }
+
+        Vector3 worldPosition = rectTransform.position;
+
+        rectTransform.pivot = new Vector2(-minX / width, -minY / height);
+        rectTransform.sizeDelta = new Vector2(width, height);
+
+        rectTransform.position = worldPosition;
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
         originalParent = transform.parent;
@@ -80,6 +152,7 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         {
             transform.SetParent(rootCanvas.transform, true);
             transform.SetAsLastSibling();
+            SetDisplayScale(1f);
             NormalizeAnchorToCenter();
         }
     }
@@ -94,6 +167,7 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
         rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.sizeDelta = defaultSizeDelta;
 
         rectTransform.position = worldPosition;
     }
@@ -145,5 +219,10 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         transform.SetParent(originalParent, false);
         transform.SetSiblingIndex(originalSiblingIndex);
         rectTransform.anchoredPosition = originalAnchoredPosition;
+
+        if (Inventory.Instance != null && originalParent == Inventory.Instance.RectTransform)
+        {
+            Inventory.Instance.ApplyDisplayScale(this);
+        }
     }
 }

@@ -19,6 +19,7 @@ public class Board : MonoBehaviour
 
     public RectTransform RectTransform => rectTransform;
     public Vector2Int GridSize => new Vector2Int(columns, rows);
+    public float CellSize => cellSize;
 
     private void Awake()
     {
