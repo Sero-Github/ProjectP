@@ -26,12 +26,18 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     private void Awake()
     {
         rectTransform = (RectTransform)transform;
+        RefreshRootCanvas();
+    }
 
+    private void OnTransformParentChanged()
+    {
+        RefreshRootCanvas();
+    }
+
+    private void RefreshRootCanvas()
+    {
         Canvas parentCanvas = GetComponentInParent<Canvas>();
-        if (parentCanvas != null)
-        {
-            rootCanvas = parentCanvas.rootCanvas;
-        }
+        rootCanvas = parentCanvas != null ? parentCanvas.rootCanvas : null;
     }
 
     public IReadOnlyList<Vector2Int> GetPieceOffsets(float cellSize)
