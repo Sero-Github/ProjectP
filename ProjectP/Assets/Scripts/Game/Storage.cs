@@ -1,8 +1,8 @@
 using UnityEngine;
 
-public class Inventory : MonoBehaviour
+public class Storage : MonoBehaviour
 {
-    public static Inventory Instance { get; private set; }
+    public static Storage Instance { get; private set; }
 
     [SerializeField] private float slotSize = 50f;
 
@@ -41,7 +41,7 @@ public class Inventory : MonoBehaviour
 
     public void ApplyDisplayScale(Block block)
     {
-        Board board = Board.Instance;
+        Bag board = Bag.Instance;
         if (board == null)
         {
             block.SetDisplayScale(1f);

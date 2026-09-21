@@ -16,10 +16,10 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     private int originalSiblingIndex;
     private Vector2 originalAnchoredPosition;
 
-    private Board placedBoard;
+    private Bag placedBoard;
     private Vector2Int placedCell;
 
-    private Board dragOriginBoard;
+    private Bag dragOriginBoard;
     private Vector2Int dragOriginCell;
 
     public RectTransform RectTransform => rectTransform;
@@ -188,7 +188,7 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        Board board = Board.Instance;
+        Bag board = Bag.Instance;
 
         if (board != null &&
             board.TryGetCellAtScreenPoint(eventData.position, eventData.pressEventCamera, out Vector2Int cell) &&
@@ -200,7 +200,7 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
             return;
         }
 
-        Inventory inventory = Inventory.Instance;
+        Storage inventory = Storage.Instance;
         if (inventory != null && inventory.ContainsScreenPoint(eventData.position, eventData.pressEventCamera))
         {
             inventory.AddBlock(this);
@@ -220,9 +220,9 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         transform.SetSiblingIndex(originalSiblingIndex);
         rectTransform.anchoredPosition = originalAnchoredPosition;
 
-        if (Inventory.Instance != null && originalParent == Inventory.Instance.RectTransform)
+        if (Storage.Instance != null && originalParent == Storage.Instance.RectTransform)
         {
-            Inventory.Instance.ApplyDisplayScale(this);
+            Storage.Instance.ApplyDisplayScale(this);
         }
     }
 }

@@ -453,7 +453,7 @@ GameObject:
   - component: {fileID: 1037189492}
   - component: {fileID: 1037189493}
   m_Layer: 5
-  m_Name: '[Panel] Inventory'
+  m_Name: '[Panel] Storage'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -590,7 +590,7 @@ GameObject:
   - component: {fileID: 2105860464}
   - component: {fileID: 2105860463}
   m_Layer: 5
-  m_Name: Board
+  m_Name: Bag
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

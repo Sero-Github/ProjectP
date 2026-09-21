@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TestInventory : MonoBehaviour
+public class TestStorage : MonoBehaviour
 {
     [SerializeField] private List<Block> blockPrefabs;
     [SerializeField] private int totalBlockCount;
@@ -13,7 +13,7 @@ public class TestInventory : MonoBehaviour
 
     private void SpawnRandomBlocks()
     {
-        if (Inventory.Instance == null || blockPrefabs == null || blockPrefabs.Count == 0)
+        if (Storage.Instance == null || blockPrefabs == null || blockPrefabs.Count == 0)
         {
             return;
         }
@@ -22,7 +22,7 @@ public class TestInventory : MonoBehaviour
         {
             Block prefab = blockPrefabs[Random.Range(0, blockPrefabs.Count)];
             Block block = Instantiate(prefab);
-            Inventory.Instance.AddBlock(block);
+            Storage.Instance.AddBlock(block);
         }
     }
 }

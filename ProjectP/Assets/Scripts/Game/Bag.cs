@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(RectTransform))]
-public class Board : MonoBehaviour
+public class Bag : MonoBehaviour
 {
-    public static Board Instance { get; private set; }
+    public static Bag Instance { get; private set; }
 
     [SerializeField] private int columns = 3;
     [SerializeField] private int rows = 3;
