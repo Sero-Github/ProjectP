@@ -1,9 +1,7 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class TestStorage : MonoBehaviour
 {
-    [SerializeField] private List<Block> blockPrefabs;
     [SerializeField] private int totalBlockCount;
 
     private void Start()
@@ -13,16 +11,18 @@ public class TestStorage : MonoBehaviour
 
     private void SpawnRandomBlocks()
     {
-        if (Storage.Instance == null || blockPrefabs == null || blockPrefabs.Count == 0)
+        if (Storage.Instance == null || BlockManager.Instance == null)
         {
             return;
         }
 
         for (int i = 0; i < totalBlockCount; i++)
         {
-            Block prefab = blockPrefabs[Random.Range(0, blockPrefabs.Count)];
-            Block block = Instantiate(prefab);
-            Storage.Instance.AddBlock(block);
+            Block block = BlockManager.Instance.CreateBlock();
+            if (block != null)
+            {
+                Storage.Instance.AddBlock(block);
+            }
         }
     }
 }

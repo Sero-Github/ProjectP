@@ -51,7 +51,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Block
   pieces:
   - {fileID: 5868485687563831057}
-  core: {fileID: 5868485687563831057}
+  coreBlock: {fileID: 5868485687563831057}
 --- !u!1001 &6917036641438254888
 PrefabInstance:
   m_ObjectHideFlags: 0

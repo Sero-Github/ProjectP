@@ -55,7 +55,7 @@ MonoBehaviour:
   - {fileID: 5868485687563831057}
   - {fileID: 1173072193790953190}
   - {fileID: 1632759465320892453}
-  core: {fileID: 5868485687563831057}
+  coreBlock: {fileID: 5868485687563831057}
 --- !u!1001 &1740630929567041564
 PrefabInstance:
   m_ObjectHideFlags: 0
