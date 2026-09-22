@@ -1,0 +1,40 @@
+.will-work {
+    color : red;
+    font-size : 200%;
+    font-weight : bold;
+}
+
+.red {
+    background-color : #FFDDDD;
+    font-weight : bold;
+}
+
+.orange {
+    background-color: #FFEEDD;
+    font-weight: bold;
+}
+
+.yellow {
+    background-color: #FFFFC8;
+    font-weight: bold;
+}
+
+.green {
+    background-color: #DDFFDD;
+    font-weight: bold;
+}
+
+.blue {
+    background-color: #DDF6FF;
+    font-weight: bold;
+}
+
+.purple {
+    background-color: #DDDDFF;
+    font-weight: bold;
+}
+
+.gray {
+    background-color: #DEDEDE;
+    font-weight: bold;
+}
