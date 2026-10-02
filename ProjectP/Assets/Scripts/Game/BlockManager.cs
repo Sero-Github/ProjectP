@@ -7,6 +7,7 @@ public class BlockManager : MonoBehaviour
     public static BlockManager Instance { get; private set; }
 
     [SerializeField] private List<Block> blockPrefabs;
+    [SerializeField] private GameObject blockPiecePrefab;
     [SerializeField] private List<Color> coreColors = new List<Color>();
     readonly private Color defaultCoreColor = Color.white;
 
@@ -41,6 +42,36 @@ public class BlockManager : MonoBehaviour
         return block;
     }
 
+    // 병합 결과처럼 임의 모양의 블록을 만든다. cells는 어떤 좌표계여도 되며 좌상단 기준으로 정렬된다.
+    public Block CreateMergedBlock(int coreId, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell)
+    {
+        if (blockPiecePrefab == null || cells == null || cells.Count == 0)
+        {
+            return null;
+        }
+
+        int minX = int.MaxValue, minY = int.MaxValue;
+        foreach (var cell in cells)
+        {
+            minX = Mathf.Min(minX, cell.x);
+            minY = Mathf.Min(minY, cell.y);
+        }
+
+        var min = new Vector2Int(minX, minY);
+        var normalizedCells = new List<Vector2Int>(cells.Count);
+        foreach (var cell in cells)
+        {
+            normalizedCells.Add(cell - min);
+        }
+
+        var go = new GameObject("Block_Merged", typeof(RectTransform));
+        Block block = go.AddComponent<Block>();
+        block.Build(coreId, normalizedCells, coreCell - min, blockPiecePrefab, true);
+        block.ApplyColor(GetColorForCore(coreId));
+
+        return block;
+    }
+
     public Color GetColorForCore(int coreId)
     {
         if (coreColorLookup != null && coreColorLookup.TryGetValue(coreId, out var color))
@@ -58,7 +89,7 @@ public class BlockManager : MonoBehaviour
 
     public IReadOnlyList<Block> GetBlocksInBag()
     {
-        return Bag.Instance != null ? Bag.Instance.RectTransform.GetComponentsInChildren<Block>() : Array.Empty<Block>();
+        return Backpack.Instance != null ? Backpack.Instance.RectTransform.GetComponentsInChildren<Block>() : Array.Empty<Block>();
     }
 
     public IReadOnlyList<Block> GetBlocksInStorage()

@@ -5,7 +5,11 @@ using UnityEngine.UI;
 
 public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    // 블록 프리팹에서 조각 한 칸의 크기. 그리드마다 다른 칸 크기는 표시 배율로 맞춘다.
+    public const float PieceUnit = 50f;
+
     [SerializeField] private int core;
+    [SerializeField] private bool isMerged;
     [SerializeField] private GameObject coreBlock;
     [SerializeField] private List<GameObject> pieces;
 
@@ -18,14 +22,17 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     private int originalSiblingIndex;
     private Vector2 originalAnchoredPosition;
 
-    private Bag placedBoard;
-    private Vector2Int placedCell;
-
-    private Bag dragOriginBoard;
-    private Vector2Int dragOriginCell;
+    private IBlockDropTarget currentTarget;
+    private IBlockDropTarget dragOrigin;
 
     public RectTransform RectTransform => rectTransform;
     public int Core => core;
+    public bool IsMerged => isMerged;
+    public IBlockDropTarget CurrentTarget => currentTarget;
+
+    // 코어 조각의 위치(블록 로컬 좌표, 배율 적용 전)와 월드 위치.
+    public Vector2 CoreLocalPosition => ((RectTransform)coreBlock.transform).anchoredPosition;
+    public Vector3 CoreWorldPosition => coreBlock.transform.position;
 
     private void Awake()
     {
@@ -45,14 +52,9 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         originalSiblingIndex = transform.GetSiblingIndex();
         originalAnchoredPosition = rectTransform.anchoredPosition;
 
-        dragOriginBoard = placedBoard;
-        dragOriginCell = placedCell;
-
-        if (placedBoard != null)
-        {
-            placedBoard.RemoveBlock(this, placedCell);
-            placedBoard = null;
-        }
+        dragOrigin = currentTarget;
+        currentTarget = null;
+        dragOrigin?.Detach(this);
 
         eventCamera = eventData.pressEventCamera;
 
@@ -60,8 +62,31 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         {
             transform.SetParent(rootCanvas.transform, true);
             transform.SetAsLastSibling();
-            SetDisplayScale(1f);
-            NormalizeAnchorToCenter();
+            ResetLayoutToCenter();
+            SetDisplayScale(GetDragScale());
+            MoveVisualCenterTo(eventData.position);
+        }
+    }
+
+    // 드래그 중에는 가방 칸과 같은 크기로 보여서, 놓기 전에 들어갈 모양을 그대로 확인할 수 있게 한다.
+    private float GetDragScale()
+    {
+        Backpack backpack = Backpack.Instance;
+        if (backpack != null && backpack.isActiveAndEnabled && backpack.CellSize > 0f)
+        {
+            return backpack.CellSize / PieceUnit;
+        }
+
+        return 1f;
+    }
+
+    // 블록 모양의 중심이 포인터 위치에 오도록 옮긴다.
+    private void MoveVisualCenterTo(Vector2 screenPoint)
+    {
+        var canvasRect = (RectTransform)rootCanvas.transform;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPoint, eventCamera, out Vector2 localPoint))
+        {
+            rectTransform.anchoredPosition = localPoint - GetVisualCenter() * rectTransform.localScale.x;
         }
     }
 
@@ -72,57 +97,77 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
             return;
         }
 
-        var canvasRect = (RectTransform)rootCanvas.transform;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, eventData.position, eventCamera, out Vector2 localPoint))
-        {
-            rectTransform.anchoredPosition = localPoint;
-        }
+        MoveVisualCenterTo(eventData.position);
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        Bag board = Bag.Instance;
-
-        if (board != null &&
-            board.TryGetCellAtScreenPoint(eventData.position, eventData.pressEventCamera, out Vector2Int cell) &&
-            board.CanPlaceBlock(this, cell))
+        // TryAccept 안에서 대상 목록이 바뀔 수 있어 복사본으로 순회한다.
+        var targets = new List<IBlockDropTarget>(BlockDropTargets.All);
+        foreach (var target in targets)
         {
-            board.PlaceBlock(this, cell);
-            placedBoard = board;
-            placedCell = cell;
-            return;
+            if (target.TryAccept(this, eventData))
+            {
+                if (dragOrigin != null && dragOrigin != target)
+                {
+                    dragOrigin.Release(this);
+                }
+                return;
+            }
         }
 
-        Storage inventory = Storage.Instance;
-        if (inventory != null && inventory.ContainsScreenPoint(eventData.position, eventData.pressEventCamera))
+        if (dragOrigin != null)
         {
-            inventory.AddBlock(this);
-            placedBoard = null;
-            return;
-        }
-
-        if (dragOriginBoard != null)
-        {
-            dragOriginBoard.PlaceBlock(this, dragOriginCell);
-            placedBoard = dragOriginBoard;
-            placedCell = dragOriginCell;
+            dragOrigin.Restore(this);
             return;
         }
 
         transform.SetParent(originalParent, false);
         transform.SetSiblingIndex(originalSiblingIndex);
         rectTransform.anchoredPosition = originalAnchoredPosition;
-
-        if (Storage.Instance != null && originalParent == Storage.Instance.RectTransform)
-        {
-            Storage.Instance.ApplyDisplayScale(this);
-        }
     }
 
     public void SetCore(int coreId)
     {
         core = coreId;
     }
+
+    public void AttachTo(IBlockDropTarget target)
+    {
+        currentTarget = target;
+    }
+
+    // 병합 결과처럼 프리팹이 없는 모양의 블록을 조각 프리팹으로 조립한다.
+    // cells는 좌상단이 (0,0)인 칸 좌표이며, coreCell은 그 중 코어 칸이다.
+    public void Build(int coreId, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab, bool merged)
+    {
+        core = coreId;
+        isMerged = merged;
+        pieces = new List<GameObject>(cells.Count);
+
+        defaultSizeDelta = new Vector2(PieceUnit, PieceUnit);
+        rectTransform.sizeDelta = defaultSizeDelta;
+
+        foreach (var cell in cells)
+        {
+            GameObject piece = Instantiate(piecePrefab, rectTransform);
+            var pieceRect = (RectTransform)piece.transform;
+            pieceRect.anchorMin = new Vector2(0.5f, 0.5f);
+            pieceRect.anchorMax = new Vector2(0.5f, 0.5f);
+            pieceRect.pivot = new Vector2(0.5f, 0.5f);
+            pieceRect.sizeDelta = new Vector2(PieceUnit, PieceUnit);
+
+            Vector2Int delta = cell - coreCell;
+            pieceRect.anchoredPosition = new Vector2(delta.x * PieceUnit, -delta.y * PieceUnit);
+
+            pieces.Add(piece);
+            if (cell == coreCell)
+            {
+                coreBlock = piece;
+            }
+        }
+    }
+    
 
     public void ApplyColor(Color color)
     {
@@ -154,7 +199,8 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         rootCanvas = parentCanvas != null ? parentCanvas.rootCanvas : null;
     }
 
-    public IReadOnlyList<Vector2Int> GetPieceOffsets(float cellSize)
+    // 코어 칸을 (0,0)으로 하는 각 조각의 칸 오프셋. y는 아래쪽이 +이다.
+    public IReadOnlyList<Vector2Int> GetPieceOffsets()
     {
         var offsets = new List<Vector2Int>(pieces.Count);
         Vector2 corePosition = ((RectTransform)coreBlock.transform).anchoredPosition;
@@ -164,8 +210,8 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
             Vector2 piecePosition = ((RectTransform)piece.transform).anchoredPosition;
             Vector2 delta = piecePosition - corePosition;
 
-            int dx = Mathf.RoundToInt(delta.x / cellSize);
-            int dy = Mathf.RoundToInt(-delta.y / cellSize);
+            int dx = Mathf.RoundToInt(delta.x / PieceUnit);
+            int dy = Mathf.RoundToInt(-delta.y / PieceUnit);
 
             offsets.Add(new Vector2Int(dx, dy));
         }
@@ -173,13 +219,13 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         return offsets;
     }
 
-    public Vector2 GetFootprintSize(float cellSize)
+    public Vector2 GetFootprintSize()
     {
-        var offsets = GetPieceOffsets(cellSize);
+        var offsets = GetPieceOffsets();
 
         if (offsets.Count == 0)
         {
-            return new Vector2(cellSize, cellSize);
+            return new Vector2(PieceUnit, PieceUnit);
         }
 
         int minX = int.MaxValue, maxX = int.MinValue;
@@ -193,8 +239,8 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
             maxY = Mathf.Max(maxY, offset.y);
         }
 
-        float width = (maxX - minX + 1) * cellSize;
-        float height = (maxY - minY + 1) * cellSize;
+        float width = (maxX - minX + 1) * PieceUnit;
+        float height = (maxY - minY + 1) * PieceUnit;
         return new Vector2(width, height);
     }
 
@@ -203,15 +249,22 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         rectTransform.localScale = new Vector3(scale, scale, 1f);
     }
 
-    // Inventory의 HorizontalLayoutGroup은 자식의 sizeDelta/pivot을 그대로 믿고 세로 중앙 정렬을 계산한다.
-    // 모든 블록 프리팹의 루트 sizeDelta/pivot이 모양과 무관하게 고정되어 있어서 그대로 두면
-    // core를 기준으로 비대칭인 모양일수록 정렬이 어긋나 보인다. 조각들의 실제 경계 박스에 맞춰
-    // sizeDelta/pivot을 보정해 레이아웃 그룹이 "진짜 그림"을 기준으로 정렬하게 만든다.
-    public void NormalizeVisualBounds(float cellSize)
+    // 조각 이미지의 raycast를 끄면 드래그할 수 없는 표시 전용 블록이 된다.
+    public void SetInteractable(bool interactable)
+    {
+        foreach (var image in GetComponentsInChildren<Image>(true))
+        {
+            image.raycastTarget = interactable;
+        }
+    }
+
+    // 조각들이 그리는 경계 박스의 중심(블록 로컬 좌표, 배율 적용 전).
+    // 코어가 모양의 중앙에 있지 않은 블록을 슬롯 가운데에 맞출 때 쓴다.
+    public Vector2 GetVisualCenter()
     {
         if (pieces == null || pieces.Count == 0)
         {
-            return;
+            return Vector2.zero;
         }
 
         float minX = float.MaxValue, maxX = float.MinValue;
@@ -221,32 +274,18 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         {
             Vector2 piecePosition = ((RectTransform)piece.transform).anchoredPosition;
 
-            minX = Mathf.Min(minX, piecePosition.x - cellSize / 2f);
-            maxX = Mathf.Max(maxX, piecePosition.x + cellSize / 2f);
-            minY = Mathf.Min(minY, piecePosition.y - cellSize / 2f);
-            maxY = Mathf.Max(maxY, piecePosition.y + cellSize / 2f);
+            minX = Mathf.Min(minX, piecePosition.x);
+            maxX = Mathf.Max(maxX, piecePosition.x);
+            minY = Mathf.Min(minY, piecePosition.y);
+            maxY = Mathf.Max(maxY, piecePosition.y);
         }
 
-        float width = maxX - minX;
-        float height = maxY - minY;
-
-        if (width <= 0f || height <= 0f)
-        {
-            return;
-        }
-
-        Vector3 worldPosition = rectTransform.position;
-
-        rectTransform.pivot = new Vector2(-minX / width, -minY / height);
-        rectTransform.sizeDelta = new Vector2(width, height);
-
-        rectTransform.position = worldPosition;
+        return new Vector2((minX + maxX) / 2f, (minY + maxY) / 2f);
     }
 
-    // Horizontal/Vertical Layout Group이 자식의 anchor를 좌상단 등으로 바꿔놓기 때문에,
-    // Board의 anchoredPosition 계산(anchorMin=anchorMax=pivot=0.5 가정)과 맞춰주기 위해
-    // 드래그를 시작해 레이아웃 그룹의 영향에서 벗어나는 시점에 anchor를 중앙으로 되돌린다.
-    private void NormalizeAnchorToCenter()
+    // BlockGrid와 창고 슬롯의 anchoredPosition 계산(anchorMin=anchorMax=pivot=0.5 가정)과 맞추기 위해
+    // anchor/pivot/sizeDelta를 중앙 기준 기본값으로 되돌린다.
+    public void ResetLayoutToCenter()
     {
         Vector3 worldPosition = rectTransform.position;
 
