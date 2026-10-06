@@ -1,27 +1,30 @@
 using UnityEngine;
 
-public class UIManager : MonoBehaviour
+namespace ProjectP.Main
 {
-    public static UIManager Instance { get; private set; }
-
-    private void Awake()
+    public class UIManager : MonoBehaviour
     {
-        if (Instance != null && Instance != this)
+        public static UIManager Instance { get; private set; }
+
+        private void Awake()
         {
-            Destroy(gameObject);
-            return;
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
         }
 
-        Instance = this;
-    }
+        public void Show(GameObject obj)
+        {
+            obj?.SetActive(true);
+        }
 
-    public void Show(GameObject obj)
-    {
-        obj?.SetActive(true);
-    }
-
-    public void Hide(GameObject obj)
-    {
-        obj?.SetActive(false);
+        public void Hide(GameObject obj)
+        {
+            obj?.SetActive(false);
+        }
     }
 }
