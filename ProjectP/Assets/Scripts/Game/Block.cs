@@ -68,13 +68,16 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         }
     }
 
-    // 드래그 중에는 가방 칸과 같은 크기로 보여서, 놓기 전에 들어갈 모양을 그대로 확인할 수 있게 한다.
+    // 드래그 중에는 지금 화면의 그리드(가방 또는 병합 슬롯) 칸과 같은 크기로 보여서,
+    // 놓기 전에 들어갈 모양을 그대로 확인할 수 있게 한다.
     private float GetDragScale()
     {
-        Backpack backpack = Backpack.Instance;
-        if (backpack != null && backpack.isActiveAndEnabled && backpack.CellSize > 0f)
+        foreach (var target in BlockDropTargets.All)
         {
-            return backpack.CellSize / PieceUnit;
+            if (target is BlockGrid grid && grid.isActiveAndEnabled && grid.CellSize > 0f)
+            {
+                return grid.CellSize / PieceUnit;
+            }
         }
 
         return 1f;
