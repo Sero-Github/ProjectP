@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -6,12 +7,19 @@ using UnityEngine.EventSystems;
 // 드롭 대상으로 등록하지 않고, 미리보기 블록은 raycast를 꺼서 직접 조작할 수 없다.
 public class MergeResultSlot : BlockGrid
 {
+    // 병합 불가 메시지. 추후 StringTable로 옮긴다.
+    private const string SYSTEM_MERGE_NOT_SYNC_CORE = "두 블록의 코어의 종류가 같아야 합니다.";
+    private const string SYSTEM_MERGE_DUPLICATION_ATTACH_BLOCK = "두 블록이 병합된 블록일 수 없습니다.";
+    private const string SYSTEM_MERGE_NO_ATTACH_BLOCK = "인접한 블록이 있어야 합니다.";
+
     // 병합할 블록(좌측). 결과 블록의 코어는 이 블록을 따른다.
     [SerializeField] private MergeSlot targetSlot;
-    // 소모 블록(우측). 원본 블록만 사용할 수 있다.
+    // 소모 블록(우측).
     [SerializeField] private MergeSlot materialSlot;
-    // 병합이 불가능할 때 켤 표시(선택).
-    [SerializeField] private GameObject invalidMark;
+    // 병합이 불가능할 때 켤 경고 메시지(선택).
+    [SerializeField] private GameObject invalidMessage;
+    // 경고 메시지 텍스트(선택).
+    [SerializeField] private TMP_Text invalidMessageText;
 
     private static readonly Vector2Int[] NeighborDirections =
     {
@@ -54,11 +62,17 @@ public class MergeResultSlot : BlockGrid
         return false;
     }
 
-    private void SetInvalidMark(bool active)
+    // message가 null이면 경고 메시지를 숨긴다.
+    private void SetInvalidMessage(string message)
     {
-        if (invalidMark != null)
+        if (invalidMessageText != null && message != null)
         {
-            invalidMark.SetActive(active);
+            invalidMessageText.text = message;
+        }
+
+        if (invalidMessage != null)
+        {
+            invalidMessage.SetActive(message != null);
         }
     }
 
@@ -71,20 +85,19 @@ public class MergeResultSlot : BlockGrid
 
         if (target == null || material == null)
         {
-            SetInvalidMark(false);
+            SetInvalidMessage(null);
             return;
         }
 
         var cells = new HashSet<Vector2Int>(targetSlot.GetOccupiedCells(target));
         cells.UnionWith(materialSlot.GetOccupiedCells(material));
 
-        if (!CanMerge(target, material, cells))
+        string invalidReason = GetMergeInvalidReason(target, material, cells);
+        SetInvalidMessage(invalidReason);
+        if (invalidReason != null)
         {
-            SetInvalidMark(true);
             return;
         }
-
-        SetInvalidMark(false);
 
         BlockManager blockManager = BlockManager.Instance;
         if (blockManager == null)
@@ -103,21 +116,27 @@ public class MergeResultSlot : BlockGrid
         previewBlock.SetInteractable(false);
     }
 
-    // 코어가 같고, 소모 블록이 원본 블록이며, 합친 칸이 하나로 이어져 있어야 병합할 수 있다.
+    // 코어가 같고, 두 블록 모두 원본 블록이며, 합친 칸이 하나로 이어져 있어야 병합할 수 있다.
     // 등급/골드/잔여 병합 횟수 조건은 데이터가 생기면 추가한다.
-    private bool CanMerge(Block target, Block material, HashSet<Vector2Int> cells)
+    // 병합할 수 있으면 null, 없으면 경고 메시지를 반환한다.
+    private string GetMergeInvalidReason(Block target, Block material, HashSet<Vector2Int> cells)
     {
         if (target.Core != material.Core)
         {
-            return false;
+            return SYSTEM_MERGE_NOT_SYNC_CORE;
         }
 
-        if (material.IsMerged)
+        if (target.IsMerged || material.IsMerged)
         {
-            return false;
+            return SYSTEM_MERGE_DUPLICATION_ATTACH_BLOCK;
         }
 
-        return IsConnected(cells);
+        if (!IsConnected(cells))
+        {
+            return SYSTEM_MERGE_NO_ATTACH_BLOCK;
+        }
+
+        return null;
     }
 
     private static bool IsConnected(HashSet<Vector2Int> cells)
