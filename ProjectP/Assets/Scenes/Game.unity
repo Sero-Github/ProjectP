@@ -3572,6 +3572,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2142834471}
   - component: {fileID: 2142834472}
+  - component: {fileID: 2142834473}
   m_Layer: 0
   m_Name: BlockManager
   m_TagString: Untagged
@@ -3621,6 +3622,20 @@ MonoBehaviour:
   - {r: 1, g: 0.3915094, b: 0.3915094, a: 1}
   - {r: 0.3443396, g: 0.44247174, b: 1, a: 1}
   - {r: 1, g: 0.90751666, b: 0.3254717, a: 1}
+--- !u!114 &2142834473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2142834470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e70ce90c1530034eaa344cac70de1c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BlockDropper
+  dropChance: 0.3
+  storage: {fileID: 877232792}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -48,6 +48,9 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
 
     public void OnBeginDrag(PointerEventData eventData)
     {
+        // 비활성 계층으로 옮겨진 동안에는 OnTransformParentChanged를 받지 못했을 수 있다.
+        RefreshRootCanvas();
+
         originalParent = transform.parent;
         originalSiblingIndex = transform.GetSiblingIndex();
         originalAnchoredPosition = rectTransform.anchoredPosition;

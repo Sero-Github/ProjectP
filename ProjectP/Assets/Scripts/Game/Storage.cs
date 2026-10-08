@@ -18,8 +18,7 @@ public class Storage : MonoBehaviour, IBlockDropTarget
     [SerializeField] private float slotOutlineThickness = 3f;
     [SerializeField] private Color slotOutlineColor = new Color(0f, 0f, 0f, 0.6f);
     [SerializeField] private Color slotFillColor = new Color(1f, 1f, 1f, 0.3f);
-    // 블록을 내려놓을 수 있는 영역. 비워두면 부모 ScrollRect 전체를 사용한다.
-    [SerializeField] private RectTransform dropArea;
+    private RectTransform dropArea;
 
     private RectTransform rectTransform;
     private readonly List<RectTransform> slots = new List<RectTransform>();
@@ -33,15 +32,26 @@ public class Storage : MonoBehaviour, IBlockDropTarget
     private void Awake()
     {
         Instance = this;
+        EnsureInitialized();
+        Relayout();
+    }
+
+    // 인벤토리 패널이 꺼져 있으면 Awake가 아직 불리지 않았을 수 있어,
+    // 그 상태에서 AddBlock이 호출돼도 동작하도록 초기화를 따로 둔다.
+    private void EnsureInitialized()
+    {
+        if (rectTransform != null)
+        {
+            return;
+        }
+
         rectTransform = (RectTransform)transform;
 
         if (dropArea == null)
         {
-            ScrollRect scrollRect = GetComponentInParent<ScrollRect>();
+            ScrollRect scrollRect = GetComponentInParent<ScrollRect>(true);
             dropArea = scrollRect != null ? (RectTransform)scrollRect.transform : rectTransform;
         }
-
-        Relayout();
     }
 
     private void OnEnable()
@@ -80,6 +90,8 @@ public class Storage : MonoBehaviour, IBlockDropTarget
 
     public void AddBlock(Block block)
     {
+        EnsureInitialized();
+
         RectTransform slot = CreateSlot();
         slots.Add(slot);
         slotByBlock[block] = slot;
