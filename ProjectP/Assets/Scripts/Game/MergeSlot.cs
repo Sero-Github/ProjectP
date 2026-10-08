@@ -73,4 +73,18 @@ public class MergeSlot : BlockGrid
         base.Restore(block);
         Changed?.Invoke();
     }
+
+    // 슬롯의 블록을 없앤다. 병합 재료로 소모될 때 쓴다.
+    public void ClearBlock()
+    {
+        Block block = Block;
+        if (block == null)
+        {
+            return;
+        }
+
+        RemoveBlock(block);
+        Destroy(block.gameObject);
+        Changed?.Invoke();
+    }
 }

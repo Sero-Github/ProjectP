@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 // 병합 결과 미리보기. 두 병합 슬롯의 블록을 칸 좌표 그대로 합친 모양을 보여준다.
 // 드롭 대상으로 등록하지 않고, 미리보기 블록은 raycast를 꺼서 직접 조작할 수 없다.
@@ -20,6 +21,8 @@ public class MergeResultSlot : BlockGrid
     [SerializeField] private GameObject invalidMessage;
     // 경고 메시지 텍스트(선택).
     [SerializeField] private TMP_Text invalidMessageText;
+    // 병합 실행 버튼. 병합할 수 있을 때만 누를 수 있다.
+    [SerializeField] private Button mergeButton;
 
     private static readonly Vector2Int[] NeighborDirections =
     {
@@ -27,6 +30,7 @@ public class MergeResultSlot : BlockGrid
     };
 
     private Block previewBlock;
+    private bool canMerge;
 
     // base를 호출하지 않아 BlockDropTargets에 등록되지 않는다.
     protected override void OnEnable()
@@ -78,7 +82,15 @@ public class MergeResultSlot : BlockGrid
 
     public void RefreshPreview()
     {
+        UpdatePreview();
+        SetMergeButtonInteractable(canMerge);
+    }
+
+    // 미리보기 블록을 다시 만들고, 만들어졌으면 canMerge를 켠다.
+    private void UpdatePreview()
+    {
         ClearPreview();
+        canMerge = false;
 
         Block target = targetSlot != null ? targetSlot.Block : null;
         Block material = materialSlot != null ? materialSlot.Block : null;
@@ -89,8 +101,7 @@ public class MergeResultSlot : BlockGrid
             return;
         }
 
-        var cells = new HashSet<Vector2Int>(targetSlot.GetOccupiedCells(target));
-        cells.UnionWith(materialSlot.GetOccupiedCells(material));
+        HashSet<Vector2Int> cells = GetMergedCells(target, material);
 
         string invalidReason = GetMergeInvalidReason(target, material, cells);
         SetInvalidMessage(invalidReason);
@@ -114,6 +125,49 @@ public class MergeResultSlot : BlockGrid
 
         PlaceBlock(previewBlock, coreCell);
         previewBlock.SetInteractable(false);
+        canMerge = true;
+    }
+
+    // [병합] 버튼: 두 슬롯의 블록을 소모하고 병합된 블록을 창고로 보낸다.
+    public void OnClickMerge()
+    {
+        if (!canMerge || Storage.Instance == null || BlockManager.Instance == null)
+        {
+            return;
+        }
+
+        Block target = targetSlot.Block;
+        Block material = materialSlot.Block;
+        HashSet<Vector2Int> cells = GetMergedCells(target, material);
+
+        // 미리보기 블록은 raycast를 꺼 두었으므로 결과 블록은 새로 만든다.
+        Block result = BlockManager.Instance.CreateMergedBlock(target.Core, new List<Vector2Int>(cells), targetSlot.CoreCell);
+        if (result == null)
+        {
+            return;
+        }
+
+        // 슬롯이 비면서 Changed로 미리보기와 버튼 상태가 갱신된다.
+        targetSlot.ClearBlock();
+        materialSlot.ClearBlock();
+
+        Storage.Instance.AddBlock(result);
+    }
+
+    // 두 블록이 슬롯에서 차지한 칸을 같은 좌표계로 합친다.
+    private HashSet<Vector2Int> GetMergedCells(Block target, Block material)
+    {
+        var cells = new HashSet<Vector2Int>(targetSlot.GetOccupiedCells(target));
+        cells.UnionWith(materialSlot.GetOccupiedCells(material));
+        return cells;
+    }
+
+    private void SetMergeButtonInteractable(bool interactable)
+    {
+        if (mergeButton != null)
+        {
+            mergeButton.interactable = interactable;
+        }
     }
 
     // 코어가 같고, 두 블록 모두 원본 블록이며, 합친 칸이 하나로 이어져 있어야 병합할 수 있다.
