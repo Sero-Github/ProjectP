@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace ProjectP.Game
@@ -6,34 +7,40 @@ namespace ProjectP.Game
     {
         public static UIManager Instance { get; private set; }
 
+        [SerializeField] private GameObject inventoryPanel;
         [SerializeField] private GameObject backpackPanel;
         [SerializeField] private GameObject mergePanel;
+        [SerializeField] private GameObject mergeButton;
 
         private void Awake()
         {
             Instance = this;
         }
 
-        // [병합] 버튼: 가방 화면을 닫고 병합 화면을 연다
-        public void OnClickMerge()
-        {
-            SetActive(backpackPanel, false);
-            SetActive(mergePanel, true);
-        }
-
-        // 병합 화면을 닫고 가방 화면으로 돌아간다
         public void OnClickBackpack()
         {
-            SetActive(mergePanel, false);
-            SetActive(backpackPanel, true);
+            inventoryPanel.SetActive(true);
+            mergePanel.SetActive(false);
+            backpackPanel.SetActive(true);
         }
 
-        private void SetActive(GameObject panel, bool active)
+        public void OnClickBack()
         {
-            if (panel != null)
-            {
-                panel.SetActive(active);
+            if (mergePanel.activeInHierarchy) {
+                mergePanel.SetActive(false);
+                mergeButton.SetActive(true);
+                backpackPanel.SetActive(true);
+            } 
+            else {
+                inventoryPanel.SetActive(false);
             }
+        }
+
+        public void OnClickMerge()
+        {
+            backpackPanel.SetActive(false);
+            mergePanel.SetActive(true);
+            mergeButton.SetActive(false);
         }
     }
 }
