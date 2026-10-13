@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67080ffdc621336458fa220222674289, type: 3}
+  m_Name: EnemyData 3
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  baseHp: 1
+  hpMultiplier: 3
+  baseAttack: 1
+  attackMultiplier: 0.8
+  baseDefense: 0
+  defenseMultiplier: 0
+  moveSpeed: 0.6
+  contactInterval: 1
+  baseGold: 0
+  goldMultiplier: 0

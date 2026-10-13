@@ -17,6 +17,17 @@ public class UnitStats
     [Min(0)]
     [SerializeField] private int healIncrease = 0;
 
+    public UnitStats()
+    {
+    }
+
+    public UnitStats(int maxHp, int defense, int healIncrease = 0)
+    {
+        this.maxHp = Mathf.Max(1, maxHp);
+        this.defense = Mathf.Max(0, defense);
+        this.healIncrease = Mathf.Max(0, healIncrease);
+    }
+
     public int MaxHp => maxHp;
     public int Defense => defense;
     public int HealIncrease => healIncrease;

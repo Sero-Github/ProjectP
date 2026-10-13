@@ -1277,7 +1277,6 @@ MonoBehaviour:
   slotOutlineThickness: 3
   slotOutlineColor: {r: 0, g: 0, b: 0, a: 0.6}
   slotFillColor: {r: 1, g: 1, b: 1, a: 0.3}
-  dropArea: {fileID: 0}
 --- !u!1 &991654407
 GameObject:
   m_ObjectHideFlags: 0
@@ -1569,12 +1568,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: baf42116200fe024e81b2ce1415ba911, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  enemyPrefab: {fileID: 4679457134162857850, guid: 908b096bddd6dc849a00901074e2d290, type: 3}
+  entries:
+  - prefab: {fileID: 4679457134162857850, guid: fad2f8ca5fd507d4ab68fa683d1a858e, type: 3}
+    weight: 70
+    maxPerStage: 0
+  - prefab: {fileID: 4679457134162857850, guid: 908b096bddd6dc849a00901074e2d290, type: 3}
+    weight: 15
+    maxPerStage: 0
+  - prefab: {fileID: 4679457134162857850, guid: e8f882344592b2c4f8b367f1bc689c34, type: 3}
+    weight: 10
+    maxPerStage: 0
+  - prefab: {fileID: 4679457134162857850, guid: 11eb08e60f294a84c8de5dd9757abca4, type: 3}
+    weight: 5
+    maxPerStage: 5
   enemyParent: {fileID: 793453934}
   targetCamera: {fileID: 1443061902}
   spawnInterval: 1
   spawnMargin: 1
   maxEnemies: 0
+  stage: 1
+  round: 1
+  roundsPerStage: 10
 --- !u!1 &1109138201
 GameObject:
   m_ObjectHideFlags: 0
@@ -1793,6 +1807,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abc9f895f81b4c3489feba477f5c0c5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
+  stats:
+    maxHp: 100
+    defense: 0
+    healIncrease: 0
 --- !u!58 &1152780750
 CircleCollider2D:
   m_ObjectHideFlags: 0
