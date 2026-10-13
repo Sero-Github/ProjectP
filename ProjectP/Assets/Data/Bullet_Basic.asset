@@ -16,3 +16,4 @@ MonoBehaviour:
   moveSpeed: 8
   projectileCount: 1
   pierce: 0
+  attack: 10

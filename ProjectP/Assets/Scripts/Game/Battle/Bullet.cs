@@ -8,6 +8,7 @@ public class Bullet : MonoBehaviour
     private Rigidbody2D rb;
     private Camera targetCamera;
     private int remainingPierce;
+    private int damage;
     private bool spent;
 
     private void Awake()
@@ -32,12 +33,13 @@ public class Bullet : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (spent || !other.TryGetComponent(out Enemy enemy))
+        // 같은 프레임에 이미 죽은 적은 파괴되기 전까지 남아 있으므로 관통 횟수를 쓰지 않게 건너뜁니다.
+        if (spent || !other.TryGetComponent(out Enemy enemy) || enemy.IsDead)
         {
             return;
         }
 
-        enemy.Hit();
+        enemy.TakeDamage(damage);
 
         if (remainingPierce > 0)
         {
@@ -53,6 +55,7 @@ public class Bullet : MonoBehaviour
     {
         targetCamera = cam;
         remainingPierce = data.Pierce;
+        damage = data.Attack;
 
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0f, 0f, angle);

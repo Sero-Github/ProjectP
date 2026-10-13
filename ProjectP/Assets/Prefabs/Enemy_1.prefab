@@ -105,7 +105,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fac4f55b3d2a7d458bf7aaf89043fc2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
+  stats:
+    maxHp: 30
+    defense: 0
+    healIncrease: 0
   moveSpeed: 1.2
+  attack: 10
+  contactInterval: 1
   radius: 0.25
 --- !u!58 &1782808815368434472
 CircleCollider2D:

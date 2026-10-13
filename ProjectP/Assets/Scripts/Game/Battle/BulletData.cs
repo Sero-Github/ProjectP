@@ -19,8 +19,13 @@ public class BulletData : ScriptableObject
     [Min(0)]
     [SerializeField] private int pierce = 0;
 
+    [Tooltip("공격력. 적중한 적에게 고정 값으로 대미지를 줍니다.")]
+    [Min(0)]
+    [SerializeField] private int attack = 10;
+
     public float Cooldown => cooldown;
     public float MoveSpeed => moveSpeed;
     public int ProjectileCount => projectileCount;
     public int Pierce => pierce;
+    public int Attack => attack;
 }
