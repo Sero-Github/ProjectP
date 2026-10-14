@@ -106,7 +106,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a93f1abc4a4bb7488a234acd7196986, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBullet
-  lifetime: 3
+  offscreenMargin: 0.5
 --- !u!58 &4988791108239429833
 CircleCollider2D:
   m_ObjectHideFlags: 0

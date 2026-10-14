@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2393242999029742752}
   - component: {fileID: 600789263123873305}
   - component: {fileID: 4679457134162857850}
+  - component: {fileID: 3517204986215340871}
   - component: {fileID: 2826413359921247566}
   - component: {fileID: 1190834898961647986}
   m_Layer: 0
@@ -111,6 +112,20 @@ MonoBehaviour:
     defense: 0
     healIncrease: 0
   data: {fileID: 11400000, guid: ef6f4a0e19372a2418be086637a04b5f, type: 2}
+--- !u!114 &3517204986215340871
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 768999963948079090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9002da6341bd6964f9fd282192a8486e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyRangedAttack
+  bulletPrefab: {fileID: 2025817603085030873, guid: 6d5ba0d48e870c245ba4078373b62e16, type: 3}
+  data: {fileID: 11400000, guid: 353daa54fbf84d9d9517b6b65faf8da8, type: 2}
 --- !u!60 &2826413359921247566
 PolygonCollider2D:
   m_ObjectHideFlags: 0
