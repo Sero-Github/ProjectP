@@ -6,9 +6,12 @@ public class BlockManager : MonoBehaviour
 {
     public static BlockManager Instance { get; private set; }
 
+    // 🧱 블록 문서의 블록 종류 순서대로 둔다. 인덱스 + 1이 블록 번호이다.
     [SerializeField] private List<Block> blockPrefabs;
     [SerializeField] private GameObject blockPiecePrefab;
+    // 인덱스가 core 번호이다. 0은 스탯 블록 색상(흰색), 1~7은 Element 속성 색상이다.
     [SerializeField] private List<Color> coreColors = new List<Color>();
+    [SerializeField] private BlockStatData statData;
     readonly private Color defaultCoreColor = Color.white;
 
     private Dictionary<int, Color> coreColorLookup;
@@ -33,17 +36,22 @@ public class BlockManager : MonoBehaviour
             return null;
         }
 
-        Block prefab = blockPrefabs[UnityEngine.Random.Range(0, blockPrefabs.Count)];
-        Block block = Instantiate(prefab);
+        int prefabIndex = UnityEngine.Random.Range(0, blockPrefabs.Count);
+        Block block = Instantiate(blockPrefabs[prefabIndex]);
 
+        block.SetBlockId(prefabIndex + 1);
         block.SetCore(UnityEngine.Random.Range(0, coreColors.Count));
+        if (block.HasStat && statData != null)
+        {
+            block.SetStat(statData.CreateRandomStat(block.BlockId));
+        }
         block.ApplyColor(GetColorForCore(block.Core));
 
         return block;
     }
 
     // 병합 결과처럼 임의 모양의 블록을 만든다. cells는 어떤 좌표계여도 되며 좌상단 기준으로 정렬된다.
-    public Block CreateMergedBlock(int coreId, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell)
+    public Block CreateMergedBlock(int coreId, int grade, BlockStat stat, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell)
     {
         if (blockPiecePrefab == null || cells == null || cells.Count == 0)
         {
@@ -66,7 +74,7 @@ public class BlockManager : MonoBehaviour
 
         var go = new GameObject("Block_Merged", typeof(RectTransform));
         Block block = go.AddComponent<Block>();
-        block.Build(coreId, normalizedCells, coreCell - min, blockPiecePrefab, true);
+        block.Build(coreId, grade, stat, normalizedCells, coreCell - min, blockPiecePrefab);
         block.ApplyColor(GetColorForCore(coreId));
 
         return block;

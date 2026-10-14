@@ -8,8 +8,14 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     // 블록 프리팹에서 조각 한 칸의 크기. 그리드마다 다른 칸 크기는 표시 배율로 맞춘다.
     public const float PieceUnit = 50f;
 
+    // 블록 종류 번호. 🧱 블록 문서의 블록 종류 순서를 따르며, 병합 블록은 0이다.
+    private int blockId;
+    // 0이면 스탯 블록, 1 이상이면 같은 번호의 Element 속성 블록이다.
     [SerializeField] private int core;
-    [SerializeField] private bool isMerged;
+    // 등급(성). 드랍되는 블록은 1성이며 병합할 때마다 1씩 오른다.
+    [SerializeField, Min(1)] private int grade = 1;
+    // 스탯 블록(core 0)만 사용한다.
+    [SerializeField] private BlockStat stat;
     [SerializeField] private GameObject coreBlock;
     [SerializeField] private List<GameObject> pieces;
 
@@ -26,8 +32,15 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     private IBlockDropTarget dragOrigin;
 
     public RectTransform RectTransform => rectTransform;
+    public int BlockId => blockId;
     public int Core => core;
-    public bool IsMerged => isMerged;
+    public int Grade => grade;
+    public BlockStat Stat => stat;
+    public bool HasStat => core == 0;
+    // 속성 블록(core 1~7)의 속성. 스탯 블록은 None이다.
+    public Element Element => (Element)core;
+    // 병합할 때만 등급이 오르므로 2성 이상이면 병합 블록이다.
+    public bool IsMerged => grade > 1;
     public IBlockDropTarget CurrentTarget => currentTarget;
 
     // 코어 조각의 위치(블록 로컬 좌표, 배율 적용 전)와 월드 위치.
@@ -136,6 +149,21 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     public void SetCore(int coreId)
     {
         core = coreId;
+        if (!HasStat)
+        {
+            stat = BlockStat.None;
+        }
+    }
+
+    public void SetBlockId(int id)
+    {
+        blockId = id;
+    }
+
+    // 스탯 블록(core 0)이 아니면 스탯은 항상 None이다.
+    public void SetStat(BlockStat blockStat)
+    {
+        stat = HasStat ? blockStat : BlockStat.None;
     }
 
     public void AttachTo(IBlockDropTarget target)
@@ -145,10 +173,11 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
 
     // 병합 결과처럼 프리팹이 없는 모양의 블록을 조각 프리팹으로 조립한다.
     // cells는 좌상단이 (0,0)인 칸 좌표이며, coreCell은 그 중 코어 칸이다.
-    public void Build(int coreId, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab, bool merged)
+    public void Build(int coreId, int blockGrade, BlockStat blockStat, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab)
     {
         core = coreId;
-        isMerged = merged;
+        grade = blockGrade;
+        SetStat(blockStat);
         pieces = new List<GameObject>(cells.Count);
 
         defaultSizeDelta = new Vector2(PieceUnit, PieceUnit);

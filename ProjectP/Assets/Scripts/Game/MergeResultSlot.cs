@@ -10,6 +10,8 @@ public class MergeResultSlot : BlockGrid
 {
     // 병합 불가 메시지. 추후 StringTable로 옮긴다.
     private const string SYSTEM_MERGE_NOT_SYNC_CORE = "두 블록의 코어의 종류가 같아야 합니다.";
+    private const string SYSTEM_MERGE_NOT_SYNC_STAT = "두 블록의 스탯이 같아야 합니다.";
+    private const string SYSTEM_MERGE_NOT_SYNC_GRADE = "두 블록의 등급이 같아야 합니다.";
     private const string SYSTEM_MERGE_DUPLICATION_ATTACH_BLOCK = "두 블록이 병합된 블록일 수 없습니다.";
     private const string SYSTEM_MERGE_NO_ATTACH_BLOCK = "인접한 블록이 있어야 합니다.";
 
@@ -110,20 +112,13 @@ public class MergeResultSlot : BlockGrid
             return;
         }
 
-        BlockManager blockManager = BlockManager.Instance;
-        if (blockManager == null)
-        {
-            return;
-        }
-
-        Vector2Int coreCell = targetSlot.CoreCell;
-        previewBlock = blockManager.CreateMergedBlock(target.Core, new List<Vector2Int>(cells), coreCell);
+        previewBlock = CreateResultBlock(target, material, cells);
         if (previewBlock == null)
         {
             return;
         }
 
-        PlaceBlock(previewBlock, coreCell);
+        PlaceBlock(previewBlock, targetSlot.CoreCell);
         previewBlock.SetInteractable(false);
         canMerge = true;
     }
@@ -141,7 +136,7 @@ public class MergeResultSlot : BlockGrid
         HashSet<Vector2Int> cells = GetMergedCells(target, material);
 
         // 미리보기 블록은 raycast를 꺼 두었으므로 결과 블록은 새로 만든다.
-        Block result = BlockManager.Instance.CreateMergedBlock(target.Core, new List<Vector2Int>(cells), targetSlot.CoreCell);
+        Block result = CreateResultBlock(target, material, cells);
         if (result == null)
         {
             return;
@@ -152,6 +147,19 @@ public class MergeResultSlot : BlockGrid
         materialSlot.ClearBlock();
 
         Storage.Instance.AddBlock(result);
+    }
+
+    // 결과 블록은 병합할 블록의 코어를 따르고, 등급이 1 오르며, 스탯 블록이면 두 스탯을 합산한다.
+    private Block CreateResultBlock(Block target, Block material, HashSet<Vector2Int> cells)
+    {
+        BlockManager blockManager = BlockManager.Instance;
+        if (blockManager == null)
+        {
+            return null;
+        }
+
+        BlockStat stat = target.HasStat ? BlockStat.Merge(target.Stat, material.Stat) : BlockStat.None;
+        return blockManager.CreateMergedBlock(target.Core, target.Grade + 1, stat, new List<Vector2Int>(cells), targetSlot.CoreCell);
     }
 
     // 두 블록이 슬롯에서 차지한 칸을 같은 좌표계로 합친다.
@@ -170,14 +178,25 @@ public class MergeResultSlot : BlockGrid
         }
     }
 
-    // 코어가 같고, 두 블록 모두 원본 블록이며, 합친 칸이 하나로 이어져 있어야 병합할 수 있다.
-    // 등급/골드/잔여 병합 횟수 조건은 데이터가 생기면 추가한다.
+    // 코어가 같고(스탯 블록이면 스탯도 같고), 등급이 같고, 두 블록 모두 원본 블록이며,
+    // 합친 칸이 하나로 이어져 있어야 병합할 수 있다.
+    // 골드/잔여 병합 횟수 조건은 데이터가 생기면 추가한다.
     // 병합할 수 있으면 null, 없으면 경고 메시지를 반환한다.
     private string GetMergeInvalidReason(Block target, Block material, HashSet<Vector2Int> cells)
     {
         if (target.Core != material.Core)
         {
             return SYSTEM_MERGE_NOT_SYNC_CORE;
+        }
+
+        if (target.HasStat && target.Stat.Type != material.Stat.Type)
+        {
+            return SYSTEM_MERGE_NOT_SYNC_STAT;
+        }
+
+        if (target.Grade != material.Grade)
+        {
+            return SYSTEM_MERGE_NOT_SYNC_GRADE;
         }
 
         if (target.IsMerged || material.IsMerged)
