@@ -7,13 +7,9 @@ public class EnemyRangedAttack : MonoBehaviour
 {
     [SerializeField] private EnemyBullet bulletPrefab;
 
-    [Tooltip("원거리 공격 주기(초). 생성 직후에는 한 주기를 기다린 뒤 첫 발을 쏩니다.")]
-    [Min(0.05f)]
-    [SerializeField] private float interval = 3f;
-
-    [Tooltip("탄환 이동 속도(유닛/초)")]
-    [Min(0f)]
-    [SerializeField] private float bulletSpeed = 5f;
+    // 발사 주기(Cooldown)와 탄속(MoveSpeed)만 사용합니다. 대미지는 몬스터 공격력을 씁니다.
+    [Tooltip("탄환 데이터. Cooldown과 MoveSpeed를 사용하며, 생성 직후에는 한 주기를 기다린 뒤 첫 발을 쏩니다.")]
+    [SerializeField] private BulletData data;
 
     private Enemy enemy;
     private float timer;
@@ -21,12 +17,12 @@ public class EnemyRangedAttack : MonoBehaviour
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
-        timer = interval;
+        timer = data != null ? data.Cooldown : 0f;
     }
 
     private void Update()
     {
-        if (bulletPrefab == null || enemy.IsDead)
+        if (data == null || bulletPrefab == null || enemy.IsDead)
         {
             return;
         }
@@ -43,7 +39,7 @@ public class EnemyRangedAttack : MonoBehaviour
             return;
         }
 
-        timer = interval;
+        timer = data.Cooldown;
         Fire(player);
     }
 
@@ -58,6 +54,6 @@ public class EnemyRangedAttack : MonoBehaviour
 
         // 스포너의 최대 몬스터 수가 자식 개수로 세어지므로 몬스터 부모 아래에 두지 않습니다.
         EnemyBullet bullet = Instantiate(bulletPrefab, origin, Quaternion.identity);
-        bullet.Launch(direction, bulletSpeed, enemy.Attack);
+        bullet.Launch(direction, data.MoveSpeed, enemy.Attack);
     }
 }

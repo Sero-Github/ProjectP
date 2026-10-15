@@ -4,6 +4,9 @@ using UnityEngine;
 // 체력을 가지고 피해와 회복을 받는 전투 개체(플레이어, 몬스터)의 공통 부분.
 public abstract class Unit : MonoBehaviour
 {
+    // EnemyEditor가 SerializedProperty로 찾을 필드 이름.
+    public const string StatsField = nameof(stats);
+
     [SerializeField] protected UnitStats stats = new UnitStats();
 
     public event Action<Unit> HpChanged;

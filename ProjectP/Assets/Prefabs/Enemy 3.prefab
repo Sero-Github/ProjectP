@@ -107,7 +107,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   stats:
-    maxHp: 30
+    maxHp: 1
     defense: 0
     healIncrease: 0
   data: {fileID: 11400000, guid: 4735428245e1702469ad0316e36afc13, type: 2}
