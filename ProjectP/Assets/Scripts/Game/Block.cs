@@ -16,6 +16,9 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     [SerializeField, Min(1)] private int grade = 1;
     // 스탯 블록(core 0)만 사용한다.
     [SerializeField] private BlockStat stat;
+    // 속성 블록(core 1~7)만 사용한다. 스킬 점수는 병합할 때 합산된다.
+    [SerializeField] private SkillType skill;
+    [SerializeField] private int skillScore;
     [SerializeField] private GameObject coreBlock;
     [SerializeField] private List<GameObject> pieces;
 
@@ -37,8 +40,12 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     public int Grade => grade;
     public BlockStat Stat => stat;
     public bool HasStat => core == 0;
+    public SkillType Skill => skill;
+    public int SkillScore => skillScore;
+    public bool HasSkill => core != 0;
     // 속성 블록(core 1~7)의 속성. 스탯 블록은 None이다.
     public Element Element => (Element)core;
+    public int PieceCount => pieces != null ? pieces.Count : 0;
     // 병합할 때만 등급이 오르므로 2성 이상이면 병합 블록이다.
     public bool IsMerged => grade > 1;
     public IBlockDropTarget CurrentTarget => currentTarget;
@@ -153,6 +160,12 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         {
             stat = BlockStat.None;
         }
+
+        if (!HasSkill)
+        {
+            skill = SkillType.None;
+            skillScore = 0;
+        }
     }
 
     public void SetBlockId(int id)
@@ -166,6 +179,13 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         stat = HasStat ? blockStat : BlockStat.None;
     }
 
+    // 속성 블록(core 1~7)이 아니면 스킬은 항상 None, 점수는 0이다.
+    public void SetSkill(SkillType skillType, int score)
+    {
+        skill = HasSkill ? skillType : SkillType.None;
+        skillScore = HasSkill ? score : 0;
+    }
+
     public void AttachTo(IBlockDropTarget target)
     {
         currentTarget = target;
@@ -173,11 +193,13 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
 
     // 병합 결과처럼 프리팹이 없는 모양의 블록을 조각 프리팹으로 조립한다.
     // cells는 좌상단이 (0,0)인 칸 좌표이며, coreCell은 그 중 코어 칸이다.
-    public void Build(int coreId, int blockGrade, BlockStat blockStat, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab)
+    public void Build(int coreId, int blockGrade, BlockStat blockStat, SkillType skillType, int score,
+        IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab)
     {
         core = coreId;
         grade = blockGrade;
         SetStat(blockStat);
+        SetSkill(skillType, score);
         pieces = new List<GameObject>(cells.Count);
 
         defaultSizeDelta = new Vector2(PieceUnit, PieceUnit);
