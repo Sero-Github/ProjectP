@@ -57,8 +57,8 @@ public class EnemyRangedAttack : MonoBehaviour
             return;
         }
 
-        // 몬스터 부모에는 몬스터 풀의 오브젝트만 두므로 탄환은 그 아래에 두지 않습니다.
-        EnemyBullet bullet = Instantiate(bulletPrefab, origin, Quaternion.identity);
+        // 탄환은 몬스터가 아니라 프리팹별 공유 풀에서 꺼내므로, 몬스터가 먼저 죽어 풀로 돌아가도 계속 날아갑니다.
+        EnemyBullet bullet = EnemyBullet.Spawn(bulletPrefab, origin);
         bullet.Launch(direction, data.MoveSpeed, enemy.Attack);
     }
 }

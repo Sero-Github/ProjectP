@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 public class BulletShooter : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class BulletShooter : MonoBehaviour
 
     private readonly List<Enemy> targets = new List<Enemy>();
     private float cooldownTimer;
+    // 화면 밖으로 나가거나 관통을 다 쓴 탄환은 비활성화되어 여기로 돌아오고, 다음 발사 때 재사용된다.
+    private ObjectPool<Bullet> pool;
 
     private void Awake()
     {
@@ -20,6 +23,33 @@ public class BulletShooter : MonoBehaviour
         {
             targetCamera = Camera.main;
         }
+
+        pool = CreatePool();
+    }
+
+    // 비활성화된 탄환이 있으면 꺼내 쓰고, 없을 때만 새로 만든다.
+    // 위치를 옮긴 뒤 켜야 이전 위치에서 보간되지 않으므로, 꺼내고 돌려줄 때 켜고 끄는 것은 Fire와 Bullet이 맡는다.
+    private ObjectPool<Bullet> CreatePool()
+    {
+        ObjectPool<Bullet> bulletPool = null;
+        bulletPool = new ObjectPool<Bullet>(
+            createFunc: () =>
+            {
+                Bullet bullet = Instantiate(bulletPrefab, bulletParent);
+                bullet.gameObject.SetActive(false);
+                bullet.SetPool(bulletPool);
+                return bullet;
+            },
+            actionOnDestroy: bullet =>
+            {
+                if (bullet != null)
+                {
+                    Destroy(bullet.gameObject);
+                }
+            },
+            // Bullet이 사라질 때 한 번만 돌려주므로 중복 반환 검사(매번 풀 전체 탐색)는 끈다.
+            collectionCheck: false);
+        return bulletPool;
     }
 
     private void Update()
@@ -94,7 +124,9 @@ public class BulletShooter : MonoBehaviour
             direction = Vector2.right;
         }
 
-        Bullet bullet = Instantiate(bulletPrefab, origin, Quaternion.identity, bulletParent);
+        Bullet bullet = pool.Get();
+        bullet.transform.SetPositionAndRotation(origin, Quaternion.identity);
+        bullet.gameObject.SetActive(true);
         bullet.Launch(direction, data, damage, targetCamera);
     }
 }

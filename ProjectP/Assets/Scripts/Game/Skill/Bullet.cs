@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Pool;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
 public class Bullet : MonoBehaviour
@@ -10,6 +11,8 @@ public class Bullet : MonoBehaviour
     private int remainingPierce;
     private int damage;
     private bool spent;
+    // BulletShooter가 만든 탄환은 사라질 때 파괴하지 않고 이 풀로 돌아간다. 씬에 직접 배치한 탄환은 null이다.
+    private IObjectPool<Bullet> pool;
 
     private void Awake()
     {
@@ -27,7 +30,7 @@ public class Bullet : MonoBehaviour
     {
         if (targetCamera != null && IsOffscreen())
         {
-            Destroy(gameObject);
+            Despawn();
         }
     }
 
@@ -47,13 +50,19 @@ public class Bullet : MonoBehaviour
             return;
         }
 
-        spent = true;
-        Destroy(gameObject);
+        Despawn();
+    }
+
+    public void SetPool(IObjectPool<Bullet> bulletPool)
+    {
+        pool = bulletPool;
     }
 
     // damage는 BulletData의 공격력에 가방 블록 스탯을 적용한 값입니다.
+    // 풀에서 다시 꺼내진 탄환도 발사마다 호출되므로, 지난 발사의 소진·관통 상태를 여기서 모두 덮어씁니다.
     public void Launch(Vector2 direction, BulletData data, int damage, Camera cam)
     {
+        spent = false;
         targetCamera = cam;
         remainingPierce = data.Pierce;
         this.damage = damage;
@@ -62,6 +71,23 @@ public class Bullet : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, 0f, angle);
         rb.rotation = angle;
         rb.linearVelocity = direction * data.MoveSpeed;
+        rb.angularVelocity = 0f;
+    }
+
+    // 같은 물리 스텝에 다른 적과 또 닿아도 두 번 반환되지 않도록 먼저 소진 처리합니다.
+    private void Despawn()
+    {
+        spent = true;
+
+        if (pool != null)
+        {
+            gameObject.SetActive(false);
+            pool.Release(this);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private bool IsOffscreen()
