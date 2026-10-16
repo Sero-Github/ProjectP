@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 public class EnemySpawner : MonoBehaviour
 {
@@ -19,6 +20,8 @@ public class EnemySpawner : MonoBehaviour
         public Enemy Prefab => prefab;
         public float Weight => weight;
         public int SpawnedThisStage { get; set; }
+        // 이 프리팹으로 만든 몬스터 풀. 사망한 몬스터는 비활성화되어 여기로 돌아오고, 다음 생성 때 재사용된다.
+        public ObjectPool<Enemy> Pool { get; set; }
 
         public bool CanSpawn => prefab != null && weight > 0f && (maxPerStage == 0 || SpawnedThisStage < maxPerStage);
     }
@@ -57,6 +60,36 @@ public class EnemySpawner : MonoBehaviour
         {
             enemyParent = transform;
         }
+
+        foreach (SpawnEntry entry in entries)
+        {
+            entry.Pool = CreatePool(entry);
+        }
+    }
+
+    // 비활성화된 몬스터가 있으면 꺼내 쓰고, 없을 때만 새로 만든다.
+    // 위치를 옮긴 뒤 켜야 이전 위치에서 보간되지 않으므로, 꺼내고 돌려줄 때 켜고 끄는 것은 SpawnEnemy와 Enemy가 맡는다.
+    private ObjectPool<Enemy> CreatePool(SpawnEntry entry)
+    {
+        ObjectPool<Enemy> pool = null;
+        pool = new ObjectPool<Enemy>(
+            createFunc: () =>
+            {
+                Enemy enemy = Instantiate(entry.Prefab, enemyParent);
+                enemy.gameObject.SetActive(false);
+                enemy.SetPool(pool);
+                return enemy;
+            },
+            actionOnDestroy: enemy =>
+            {
+                if (enemy != null)
+                {
+                    Destroy(enemy.gameObject);
+                }
+            },
+            // Enemy가 사망할 때 한 번만 돌려주므로 중복 반환 검사(매번 풀 전체 탐색)는 끈다.
+            collectionCheck: false);
+        return pool;
     }
 
     private void Update()
@@ -78,7 +111,8 @@ public class EnemySpawner : MonoBehaviour
             return null;
         }
 
-        if (maxEnemies > 0 && enemyParent.childCount >= maxEnemies)
+        // 몬스터 부모 아래에는 풀에서 쉬는 비활성 몬스터도 있으므로 자식 수 대신 살아 있는 수를 센다.
+        if (maxEnemies > 0 && CountActive() >= maxEnemies)
         {
             return null;
         }
@@ -89,10 +123,26 @@ public class EnemySpawner : MonoBehaviour
             return null;
         }
 
-        Enemy enemy = Instantiate(entry.Prefab, GetSpawnPosition(), Quaternion.identity, enemyParent);
+        Enemy enemy = entry.Pool.Get();
+        enemy.transform.SetPositionAndRotation(GetSpawnPosition(), Quaternion.identity);
         enemy.Initialize(Level);
+        enemy.gameObject.SetActive(true);
         entry.SpawnedThisStage++;
         return enemy;
+    }
+
+    private int CountActive()
+    {
+        int count = 0;
+        foreach (SpawnEntry entry in entries)
+        {
+            if (entry.Pool != null)
+            {
+                count += entry.Pool.CountActive;
+            }
+        }
+
+        return count;
     }
 
     // 스테이지가 바뀌면 스테이지당 생성 개수 제한을 초기화합니다.

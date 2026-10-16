@@ -5,10 +5,21 @@ using UnityEngine;
 // - 조각은 몬스터 스프라이트 모양 그대로(원형이면 원, 삼각형이면 삼각형)이며, 크기와 비율, 회전이 제각각이다.
 // - 조각은 몬스터 몸 안에서 생겨 중심에서 바깥으로 퍼지고, 1초 동안 작아지며 사라진다.
 // - 색은 사망 순간 몬스터의 색(= 주입된 속성의 색)을 따른다.
-// 스프라이트 종류마다 파티클 시스템 하나를 만들어 두고 Emit으로 재사용하므로, 사망할 때마다 오브젝트를 만들지 않는다.
+// 스프라이트 종류마다 파티클 시스템 하나를 만들어 두고 Emit으로 재사용한다. 파티클 시스템이 수명이 끝난 조각 자리를
+// 다음 조각에 다시 쓰므로 사망할 때마다 오브젝트를 만들거나 파괴하지 않으며, 스프라이트 메시도 미리 읽어 두어 할당이 없다.
 // 씬에 배치하면 인스펙터 값으로 조정할 수 있고, 없으면 처음 사망할 때 기본값으로 자동 생성된다.
 public class EnemyDeathParticles : MonoBehaviour
 {
+    // 스프라이트 한 종류의 파티클 시스템과, 조각 위치를 고를 메시 정보.
+    // Sprite.vertices/triangles는 읽을 때마다 새 배열을 만들므로 처음 한 번만 읽는다.
+    private class ShapeParticles
+    {
+        public ParticleSystem System;
+        public Vector2[] Vertices;
+        public ushort[] Triangles;
+        public float TotalArea;
+    }
+
     private static EnemyDeathParticles instance;
 
     [Header("개수")]
@@ -47,7 +58,7 @@ public class EnemyDeathParticles : MonoBehaviour
     [Tooltip("몬스터보다 앞에 그리도록 더할 Sorting Order")]
     [SerializeField] private int sortingOrderOffset = 1;
 
-    private readonly Dictionary<Sprite, ParticleSystem> systems = new Dictionary<Sprite, ParticleSystem>();
+    private readonly Dictionary<Sprite, ShapeParticles> shapes = new Dictionary<Sprite, ShapeParticles>();
 
     private void Awake()
     {
@@ -86,8 +97,7 @@ public class EnemyDeathParticles : MonoBehaviour
 
     private void Emit(SpriteRenderer source)
     {
-        ParticleSystem system = GetSystem(source);
-        Sprite sprite = source.sprite;
+        ShapeParticles shape = GetShape(source);
         Transform sourceTransform = source.transform;
 
         Vector3 center = source.bounds.center;
@@ -95,17 +105,13 @@ public class EnemyDeathParticles : MonoBehaviour
         float bodySize = Mathf.Max(extents.x, extents.y) * 2f;
         float bodyRadius = Mathf.Max(0.0001f, bodySize * 0.5f);
 
-        IReadOnlyList<Vector2> vertices = sprite.vertices;
-        IReadOnlyList<ushort> triangles = sprite.triangles;
-        float totalArea = GetMeshArea(vertices, triangles);
-
         int count = Random.Range(minCount, Mathf.Max(minCount, maxCount) + 1);
         var emitParams = new ParticleSystem.EmitParams();
 
         for (int i = 0; i < count; i++)
         {
             // 조각은 몬스터 몸(스프라이트 메시) 안의 한 점에서 생긴다.
-            Vector3 position = sourceTransform.TransformPoint(GetRandomPointInMesh(vertices, triangles, totalArea));
+            Vector3 position = sourceTransform.TransformPoint(GetRandomPointInMesh(shape.Vertices, shape.Triangles, shape.TotalArea));
             position.z = center.z;
 
             Vector2 offset = position - center;
@@ -125,21 +131,30 @@ public class EnemyDeathParticles : MonoBehaviour
             emitParams.startLifetime = lifetime;
             emitParams.startColor = Color.Lerp(source.color, Color.white, Random.Range(0f, whiteBlend));
 
-            system.Emit(emitParams, 1);
+            shape.System.Emit(emitParams, 1);
         }
     }
 
-    // 스프라이트 종류마다 파티클 시스템 하나를 만들어 둔다.
-    private ParticleSystem GetSystem(SpriteRenderer source)
+    // 스프라이트 종류마다 파티클 시스템 하나를 만들어 두고, 같은 모양의 몬스터는 계속 그것을 쓴다.
+    private ShapeParticles GetShape(SpriteRenderer source)
     {
-        if (systems.TryGetValue(source.sprite, out ParticleSystem system) && system != null)
+        Sprite sprite = source.sprite;
+        if (shapes.TryGetValue(sprite, out ShapeParticles shape) && shape.System != null)
         {
-            return system;
+            return shape;
         }
 
-        system = CreateSystem(source);
-        systems[source.sprite] = system;
-        return system;
+        Vector2[] vertices = sprite.vertices;
+        ushort[] triangles = sprite.triangles;
+        shape = new ShapeParticles
+        {
+            System = CreateSystem(source),
+            Vertices = vertices,
+            Triangles = triangles,
+            TotalArea = GetMeshArea(vertices, triangles),
+        };
+        shapes[sprite] = shape;
+        return shape;
     }
 
     private ParticleSystem CreateSystem(SpriteRenderer source)
@@ -196,10 +211,10 @@ public class EnemyDeathParticles : MonoBehaviour
         return system;
     }
 
-    private static float GetMeshArea(IReadOnlyList<Vector2> vertices, IReadOnlyList<ushort> triangles)
+    private static float GetMeshArea(Vector2[] vertices, ushort[] triangles)
     {
         float area = 0f;
-        for (int i = 0; i + 2 < triangles.Count; i += 3)
+        for (int i = 0; i + 2 < triangles.Length; i += 3)
         {
             area += GetTriangleArea(vertices[triangles[i]], vertices[triangles[i + 1]], vertices[triangles[i + 2]]);
         }
@@ -208,16 +223,16 @@ public class EnemyDeathParticles : MonoBehaviour
     }
 
     // 넓이에 비례해 삼각형을 고른 뒤 그 안의 한 점을 고르므로, 메시 전체에 고르게 분포한다.
-    private static Vector2 GetRandomPointInMesh(IReadOnlyList<Vector2> vertices, IReadOnlyList<ushort> triangles, float totalArea)
+    private static Vector2 GetRandomPointInMesh(Vector2[] vertices, ushort[] triangles, float totalArea)
     {
-        if (triangles.Count < 3 || totalArea <= 0f)
+        if (triangles.Length < 3 || totalArea <= 0f)
         {
             return Vector2.zero;
         }
 
         float pick = Random.value * totalArea;
         int index = 0;
-        for (; index + 2 < triangles.Count; index += 3)
+        for (; index + 2 < triangles.Length; index += 3)
         {
             pick -= GetTriangleArea(vertices[triangles[index]], vertices[triangles[index + 1]], vertices[triangles[index + 2]]);
             if (pick <= 0f)
@@ -227,7 +242,7 @@ public class EnemyDeathParticles : MonoBehaviour
         }
 
         // 부동소수점 오차로 끝까지 간 경우 마지막 삼각형을 쓴다.
-        index = Mathf.Min(index, triangles.Count - 3);
+        index = Mathf.Min(index, triangles.Length - 3);
 
         Vector2 a = vertices[triangles[index]];
         Vector2 b = vertices[triangles[index + 1]];

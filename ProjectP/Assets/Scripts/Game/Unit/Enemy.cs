@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 // 유형별 외형에 맞는 콜라이더(Circle, Polygon, Box 등)를 쓸 수 있도록 Collider2D는 강제하지 않는다.
 [RequireComponent(typeof(Rigidbody2D))]
@@ -19,6 +20,8 @@ public class Enemy : Unit
     private SpriteRenderer spriteRenderer;
     private Player contactTarget;
     private float contactTimer;
+    // 스포너가 만든 몬스터는 사망하면 파괴하지 않고 이 풀로 돌아간다. 씬에 직접 배치한 몬스터는 null이다.
+    private IObjectPool<Enemy> pool;
 
     public EnemyData Data => data;
     public int Level { get; private set; }
@@ -45,11 +48,20 @@ public class Enemy : Unit
         actives.Add(this);
     }
 
+    // 풀로 돌아갈 때 지난 생애의 접촉 상태가 다음 생성으로 이어지지 않게 비운다.
     private void OnDisable()
     {
         actives.Remove(this);
+        contactTarget = null;
+        contactTimer = 0f;
     }
 
+    public void SetPool(IObjectPool<Enemy> enemyPool)
+    {
+        pool = enemyPool;
+    }
+
+    // 생성되거나 풀에서 다시 꺼내질 때마다 호출되어 체력을 가득 채운다.
     public void Initialize(int level)
     {
         if (data == null)
@@ -98,7 +110,16 @@ public class Enemy : Unit
         Killed?.Invoke(this);
         // 몬스터 모양과 현재 색(주입된 속성의 색)으로 조각나며 사라진다.
         EnemyDeathParticles.Play(spriteRenderer);
-        Destroy(gameObject);
+
+        if (pool != null)
+        {
+            gameObject.SetActive(false);
+            pool.Release(this);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)

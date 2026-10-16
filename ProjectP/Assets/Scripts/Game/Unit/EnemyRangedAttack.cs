@@ -17,6 +17,11 @@ public class EnemyRangedAttack : MonoBehaviour
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
+    }
+
+    // 풀에서 다시 꺼내진 몬스터도 생성 직후처럼 한 주기를 기다린 뒤 첫 발을 쏜다.
+    private void OnEnable()
+    {
         timer = data != null ? data.Cooldown : 0f;
     }
 
@@ -52,7 +57,7 @@ public class EnemyRangedAttack : MonoBehaviour
             return;
         }
 
-        // 스포너의 최대 몬스터 수가 자식 개수로 세어지므로 몬스터 부모 아래에 두지 않습니다.
+        // 몬스터 부모에는 몬스터 풀의 오브젝트만 두므로 탄환은 그 아래에 두지 않습니다.
         EnemyBullet bullet = Instantiate(bulletPrefab, origin, Quaternion.identity);
         bullet.Launch(direction, data.MoveSpeed, enemy.Attack);
     }
