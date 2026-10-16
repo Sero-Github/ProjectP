@@ -16,6 +16,7 @@ public class Enemy : Unit
     [SerializeField] private EnemyData data;
 
     private Rigidbody2D rb;
+    private SpriteRenderer spriteRenderer;
     private Player contactTarget;
     private float contactTimer;
 
@@ -32,6 +33,7 @@ public class Enemy : Unit
         rb.bodyType = RigidbodyType2D.Kinematic;
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
 
+        spriteRenderer = GetComponent<SpriteRenderer>();
         GetComponent<Collider2D>().isTrigger = true;
 
         // 씬에 직접 배치된 경우를 위해 1레벨로 초기화해 두고, 스포너가 생성 직후 다시 초기화합니다.
@@ -94,6 +96,8 @@ public class Enemy : Unit
     protected override void OnDied()
     {
         Killed?.Invoke(this);
+        // 몬스터 모양과 현재 색(주입된 속성의 색)으로 조각나며 사라진다.
+        EnemyDeathParticles.Play(spriteRenderer);
         Destroy(gameObject);
     }
 
