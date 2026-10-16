@@ -51,11 +51,12 @@ public class Bullet : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public void Launch(Vector2 direction, BulletData data, Camera cam)
+    // damage는 BulletData의 공격력에 가방 블록 스탯을 적용한 값입니다.
+    public void Launch(Vector2 direction, BulletData data, int damage, Camera cam)
     {
         targetCamera = cam;
         remainingPierce = data.Pierce;
-        damage = data.Attack;
+        this.damage = damage;
 
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0f, 0f, angle);

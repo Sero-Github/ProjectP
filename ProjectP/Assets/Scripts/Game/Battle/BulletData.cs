@@ -19,7 +19,7 @@ public class BulletData : ScriptableObject
     [Min(0)]
     [SerializeField] private int pierce = 0;
 
-    [Tooltip("공격력. 적중한 적에게 고정 값으로 대미지를 줍니다.")]
+    [Tooltip("기본 공격력. 가방 블록의 공격력과 대미지 증가가 더해져 적중한 적에게 대미지를 줍니다.")]
     [Min(0)]
     [SerializeField] private int attack = 10;
 

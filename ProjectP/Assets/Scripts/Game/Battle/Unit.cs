@@ -68,5 +68,21 @@ public abstract class Unit : MonoBehaviour
         HpChanged?.Invoke(this);
     }
 
+    // 스탯을 교체하되 현재 체력 비율을 유지한다. 최대 체력이 바뀌는 블록을 넣고 빼는 것만으로 체력을 회복하지 못하게 한다.
+    // 살아 있으면 체력이 0이 되지 않으며, 이미 죽었다면 체력은 0 그대로이다.
+    protected void ReplaceStats(UnitStats newStats)
+    {
+        float ratio = stats.MaxHp > 0 ? (float)CurrentHp / stats.MaxHp : 1f;
+        bool wasDead = IsDead;
+
+        stats = newStats;
+        if (!wasDead)
+        {
+            CurrentHp = Mathf.Clamp(Mathf.RoundToInt(stats.MaxHp * ratio), 1, stats.MaxHp);
+        }
+
+        HpChanged?.Invoke(this);
+    }
+
     protected abstract void OnDied();
 }

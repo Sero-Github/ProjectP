@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class BulletShooter : MonoBehaviour
 {
+    // 쿨타임 감소 상한선이 정해지기 전까지, 매 프레임 발사되지 않도록 최소 쿨타임만 둡니다.
+    private const float MinCooldown = 0.05f;
+
     [SerializeField] private BulletData data;
     [SerializeField] private Bullet bulletPrefab;
     [SerializeField] private Transform bulletParent;
@@ -40,12 +43,16 @@ public class BulletShooter : MonoBehaviour
             return;
         }
 
+        // 대미지는 발사 순간의 블록 스탯으로 정해 탄환에 넘기므로, 날아가는 중에 블록이 바뀌어도 영향받지 않습니다.
+        BlockStatTotals blockStats = SkillManager.Instance != null ? SkillManager.Instance.Stats : BlockStatTotals.Empty;
+        int damage = blockStats.ApplyDamage(data.Attack);
+
         foreach (Enemy target in targets)
         {
-            Fire(target);
+            Fire(target, damage);
         }
 
-        cooldownTimer = data.Cooldown;
+        cooldownTimer = Mathf.Max(MinCooldown, blockStats.ApplyCooldown(data.Cooldown));
     }
 
     // 화면 안의 적 중 가까운 순으로 최대 count마리를 중복 없이 고릅니다.
@@ -78,7 +85,7 @@ public class BulletShooter : MonoBehaviour
         return viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f;
     }
 
-    private void Fire(Enemy target)
+    private void Fire(Enemy target, int damage)
     {
         Vector2 origin = transform.position;
         Vector2 direction = ((Vector2)target.transform.position - origin).normalized;
@@ -88,6 +95,6 @@ public class BulletShooter : MonoBehaviour
         }
 
         Bullet bullet = Instantiate(bulletPrefab, origin, Quaternion.identity, bulletParent);
-        bullet.Launch(direction, data, targetCamera);
+        bullet.Launch(direction, data, damage, targetCamera);
     }
 }
