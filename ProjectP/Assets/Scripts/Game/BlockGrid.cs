@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -27,6 +28,9 @@ public abstract class BlockGrid : MonoBehaviour, IBlockDropTarget
 
     private Block detachedBlock;
     private Vector2Int detachedCell;
+
+    // 블록이 배치되거나 빠질 때 호출된다. 드래그를 시작해 블록을 들어 올린 경우도 빠진 것으로 본다.
+    public event Action Changed;
 
     public RectTransform RectTransform => rectTransform;
     public Vector2Int GridSize => new Vector2Int(columns, rows);
@@ -217,6 +221,8 @@ public abstract class BlockGrid : MonoBehaviour, IBlockDropTarget
         block.ResetLayoutToCenter();
         ApplyBlockTransform(block, originCell);
         block.AttachTo(this);
+
+        Changed?.Invoke();
     }
 
     // 블록의 코어 조각이 originCell 중심에 오도록 위치와 배율을 맞춘다.
@@ -244,6 +250,8 @@ public abstract class BlockGrid : MonoBehaviour, IBlockDropTarget
         }
 
         placedBlocks.Remove(block);
+
+        Changed?.Invoke();
     }
 
     // 블록이 실제로 차지하고 있는 그리드 칸 목록.

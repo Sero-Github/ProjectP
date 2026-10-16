@@ -1,13 +1,10 @@
-using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 // 병합 화면의 블록 슬롯. 블록을 하나만 받으며, 이미 블록이 있으면 새 블록으로 교체하고 기존 블록은 창고로 돌려보낸다.
+// 블록이 들어오거나 빠지면 BlockGrid.Changed가 호출되어 병합 결과 미리보기가 갱신된다.
 public class MergeSlot : BlockGrid
 {
-    // 슬롯의 블록이 들어오거나 빠질 때 호출된다. 병합 결과 미리보기 갱신에 쓴다.
-    public event Action Changed;
-
     public Block Block
     {
         get
@@ -31,13 +28,7 @@ public class MergeSlot : BlockGrid
         Block existing = Block;
         if (existing == null || existing == block)
         {
-            if (!base.TryAccept(block, eventData))
-            {
-                return false;
-            }
-
-            Changed?.Invoke();
-            return true;
+            return base.TryAccept(block, eventData);
         }
 
         if (Storage.Instance == null)
@@ -57,21 +48,7 @@ public class MergeSlot : BlockGrid
 
         PlaceBlock(block, cell);
         Storage.Instance.AddBlock(existing);
-
-        Changed?.Invoke();
         return true;
-    }
-
-    public override void Detach(Block block)
-    {
-        base.Detach(block);
-        Changed?.Invoke();
-    }
-
-    public override void Restore(Block block)
-    {
-        base.Restore(block);
-        Changed?.Invoke();
     }
 
     // 슬롯의 블록을 없앤다. 병합 재료로 소모될 때 쓴다.
@@ -85,6 +62,5 @@ public class MergeSlot : BlockGrid
 
         RemoveBlock(block);
         Destroy(block.gameObject);
-        Changed?.Invoke();
     }
 }
