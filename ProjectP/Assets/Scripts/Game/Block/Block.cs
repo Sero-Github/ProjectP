@@ -12,8 +12,10 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     private int blockId;
     // 0이면 스탯 블록, 1 이상이면 같은 번호의 Element 속성 블록이다.
     [SerializeField] private int core;
-    // 등급(성). 드랍되는 블록은 1성이며 병합할 때마다 1씩 오른다.
+    // 등급(성). 최대 병합 횟수를 정하며, 1등급당 1회 병합할 수 있다. 병합해도 등급은 오르지 않는다.
     [SerializeField, Min(1)] private int grade = 1;
+    // 이 블록이 병합된 횟수. 0이면 원본 블록이다.
+    [SerializeField, Min(0)] private int mergeCount;
     // 스탯 블록(core 0)만 사용한다.
     [SerializeField] private BlockStat stat;
     // 속성 블록(core 1~7)만 사용한다. 스킬 점수는 병합할 때 합산된다.
@@ -46,8 +48,11 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     // 속성 블록(core 1~7)의 속성. 스탯 블록은 None이다.
     public Element Element => (Element)core;
     public int PieceCount => pieces != null ? pieces.Count : 0;
-    // 병합할 때만 등급이 오르므로 2성 이상이면 병합 블록이다.
-    public bool IsMerged => grade > 1;
+    public int MergeCount => mergeCount;
+    // 남은 병합 횟수. 최대 병합 횟수는 등급과 같다.
+    public int RemainingMerges => Mathf.Max(0, grade - mergeCount);
+    // 한 번이라도 병합했으면 병합 블록이며, 소모 블록으로 쓸 수 없다.
+    public bool IsMerged => mergeCount > 0;
     public IBlockDropTarget CurrentTarget => currentTarget;
 
     // 코어 조각의 위치(블록 로컬 좌표, 배율 적용 전)와 월드 위치.
@@ -173,6 +178,11 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         blockId = id;
     }
 
+    public void SetGrade(int blockGrade)
+    {
+        grade = Mathf.Max(1, blockGrade);
+    }
+
     // 스탯 블록(core 0)이 아니면 스탯은 항상 None이다.
     public void SetStat(BlockStat blockStat)
     {
@@ -193,11 +203,12 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
 
     // 병합 결과처럼 프리팹이 없는 모양의 블록을 조각 프리팹으로 조립한다.
     // cells는 좌상단이 (0,0)인 칸 좌표이며, coreCell은 그 중 코어 칸이다.
-    public void Build(int coreId, int blockGrade, BlockStat blockStat, SkillType skillType, int score,
+    public void Build(int coreId, int blockGrade, int blockMergeCount, BlockStat blockStat, SkillType skillType, int score,
         IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab)
     {
         core = coreId;
-        grade = blockGrade;
+        SetGrade(blockGrade);
+        mergeCount = Mathf.Max(0, blockMergeCount);
         SetStat(blockStat);
         SetSkill(skillType, score);
         pieces = new List<GameObject>(cells.Count);

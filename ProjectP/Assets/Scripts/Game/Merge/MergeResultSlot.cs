@@ -13,7 +13,8 @@ public class MergeResultSlot : BlockGrid
     private const string SYSTEM_MERGE_NOT_SYNC_STAT = "두 블록의 스탯이 같아야 합니다.";
     private const string SYSTEM_MERGE_NOT_SYNC_SKILL = "두 블록의 스킬이 같아야 합니다.";
     private const string SYSTEM_MERGE_NOT_SYNC_GRADE = "두 블록의 등급이 같아야 합니다.";
-    private const string SYSTEM_MERGE_DUPLICATION_ATTACH_BLOCK = "두 블록이 병합된 블록일 수 없습니다.";
+    private const string SYSTEM_MERGE_MATERIAL_NOT_ORIGINAL = "소모 블록은 병합하지 않은 원본 블록이어야 합니다.";
+    private const string SYSTEM_MERGE_NO_REMAINING_COUNT = "병합할 블록의 남은 병합 횟수가 없습니다.";
     private const string SYSTEM_MERGE_NO_ATTACH_BLOCK = "인접한 블록이 있어야 합니다.";
 
     // 병합할 블록(좌측). 결과 블록의 코어는 이 블록을 따른다.
@@ -150,7 +151,7 @@ public class MergeResultSlot : BlockGrid
         Storage.Instance.AddBlock(result);
     }
 
-    // 결과 블록은 병합할 블록의 코어를 따르고, 등급이 1 오르며,
+    // 결과 블록은 병합할 블록의 코어와 등급을 따르고, 병합 횟수가 1 오르며,
     // 스탯 블록이면 두 스탯을, 속성 블록이면 두 스킬 점수를 합산한다.
     private Block CreateResultBlock(Block target, Block material, HashSet<Vector2Int> cells)
     {
@@ -162,7 +163,7 @@ public class MergeResultSlot : BlockGrid
 
         BlockStat stat = target.HasStat ? BlockStat.Merge(target.Stat, material.Stat) : BlockStat.None;
         int skillScore = target.HasSkill ? target.SkillScore + material.SkillScore : 0;
-        return blockManager.CreateMergedBlock(target.Core, target.Grade + 1, stat, target.Skill, skillScore,
+        return blockManager.CreateMergedBlock(target.Core, target.Grade, target.MergeCount + 1, stat, target.Skill, skillScore,
             new List<Vector2Int>(cells), targetSlot.CoreCell);
     }
 
@@ -182,8 +183,8 @@ public class MergeResultSlot : BlockGrid
         }
     }
 
-    // 코어가 같고(스탯 블록이면 스탯, 속성 블록이면 스킬도 같고), 등급이 같고, 두 블록 모두 원본 블록이며,
-    // 합친 칸이 하나로 이어져 있어야 병합할 수 있다.
+    // 코어가 같고(스탯 블록이면 스탯, 속성 블록이면 스킬도 같고), 등급이 같고, 소모 블록이 원본 블록이고,
+    // 병합할 블록에 남은 병합 횟수가 있으며, 합친 칸이 하나로 이어져 있어야 병합할 수 있다.
     // 골드/잔여 병합 횟수 조건은 데이터가 생기면 추가한다.
     // 병합할 수 있으면 null, 없으면 경고 메시지를 반환한다.
     private string GetMergeInvalidReason(Block target, Block material, HashSet<Vector2Int> cells)
@@ -208,9 +209,14 @@ public class MergeResultSlot : BlockGrid
             return SYSTEM_MERGE_NOT_SYNC_GRADE;
         }
 
-        if (target.IsMerged || material.IsMerged)
+        if (material.IsMerged)
         {
-            return SYSTEM_MERGE_DUPLICATION_ATTACH_BLOCK;
+            return SYSTEM_MERGE_MATERIAL_NOT_ORIGINAL;
+        }
+
+        if (target.RemainingMerges <= 0)
+        {
+            return SYSTEM_MERGE_NO_REMAINING_COUNT;
         }
 
         if (!IsConnected(cells))
