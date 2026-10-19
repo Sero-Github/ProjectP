@@ -6,6 +6,9 @@ public class BlockManager : MonoBehaviour
 {
     public static BlockManager Instance { get; private set; }
 
+    // 드랍되는 블록의 등급. 등급별 드랍이 정해지기 전까지는 1등급만 드랍한다.
+    private const int DropGrade = 1;
+
     // 🧱 블록 문서의 블록 종류 순서대로 둔다. 인덱스 + 1이 블록 번호이다.
     [SerializeField] private List<Block> blockPrefabs;
     [SerializeField] private GameObject blockPiecePrefab;
@@ -43,6 +46,7 @@ public class BlockManager : MonoBehaviour
         Block block = Instantiate(blockPrefabs[prefabIndex]);
 
         block.SetBlockId(prefabIndex + 1);
+        block.SetGrade(DropGrade);
         block.SetCore(UnityEngine.Random.Range(0, coreColors.Count));
         if (block.HasStat && statData != null)
         {
@@ -60,7 +64,7 @@ public class BlockManager : MonoBehaviour
     }
 
     // 병합 결과처럼 임의 모양의 블록을 만든다. cells는 어떤 좌표계여도 되며 좌상단 기준으로 정렬된다.
-    public Block CreateMergedBlock(int coreId, int grade, BlockStat stat, SkillType skill, int skillScore,
+    public Block CreateMergedBlock(int coreId, int grade, int mergeCount, BlockStat stat, SkillType skill, int skillScore,
         IReadOnlyList<Vector2Int> cells, Vector2Int coreCell)
     {
         if (blockPiecePrefab == null || cells == null || cells.Count == 0)
@@ -84,7 +88,7 @@ public class BlockManager : MonoBehaviour
 
         var go = new GameObject("Block_Merged", typeof(RectTransform));
         Block block = go.AddComponent<Block>();
-        block.Build(coreId, grade, stat, skill, skillScore, normalizedCells, coreCell - min, blockPiecePrefab);
+        block.Build(coreId, grade, mergeCount, stat, skill, skillScore, normalizedCells, coreCell - min, blockPiecePrefab);
         block.ApplyColor(GetColorForCore(coreId));
 
         return block;
