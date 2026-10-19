@@ -46,11 +46,22 @@ public class BlockStatTotals
         return totals.TryGetValue(type, out int value) ? value : 0;
     }
 
-    // 실제 적용 대미지 = 공격력 * (1 + 대미지 증가%). 공격력은 스킬 기본 공격력에 공격력 스탯을 더한 값이다.
-    // 속성 공격력은 스킬에 속성이 생기면 더한다. 소수점 이하는 버린다.
-    public int ApplyDamage(int baseAttack)
+    // 속성 공격력 스탯. 속성이 없으면 0이다.
+    public int GetElementAttack(Element element)
     {
-        int attack = baseAttack + Get(StatType.Attack);
+        if (element < Element.Red || element > Element.Gray)
+        {
+            return 0;
+        }
+
+        return Get(StatType.ElementAttack_1 + (element - Element.Red));
+    }
+
+    // 실제 적용 대미지 = (공격력 + 속성 공격력) * (1 + 대미지 증가%). 공격력은 스킬 기본 공격력에 공격력 스탯을 더한 값이다.
+    // elementAttack은 속성 공격력 스탯과 스킬 점수로 얻은 속성 공격력의 합이며, 무속성 공격은 0이다. 소수점 이하는 버린다.
+    public int ApplyDamage(int baseAttack, int elementAttack = 0)
+    {
+        int attack = baseAttack + Get(StatType.Attack) + elementAttack;
         // 10 * 1.1이 10.999...로 계산되어 10이 되지 않도록 작은 오차를 더한다.
         return Mathf.FloorToInt(attack * (1f + Get(StatType.DamageIncrease) * 0.01f) + 0.0001f);
     }

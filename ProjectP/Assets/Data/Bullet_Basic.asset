@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 327cc3a5df104626a25a37691b5aea0f, type: 3}
   m_Name: Bullet_Basic
   m_EditorClassIdentifier: Assembly-CSharp::BulletData
-  cooldown: 1
-  moveSpeed: 8
+  cooldown: 1.5
+  moveSpeed: 5
   projectileCount: 1
   pierce: 0
   attack: 10

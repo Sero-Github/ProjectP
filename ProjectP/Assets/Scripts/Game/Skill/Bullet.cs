@@ -7,6 +7,7 @@ public class Bullet : MonoBehaviour
     [SerializeField] private float offscreenMargin = 0.5f;
 
     private Rigidbody2D rb;
+    private SpriteRenderer spriteRenderer;
     private Camera targetCamera;
     private int remainingPierce;
     private int damage;
@@ -14,9 +15,13 @@ public class Bullet : MonoBehaviour
     // BulletShooter가 만든 탄환은 사라질 때 파괴하지 않고 이 풀로 돌아간다. 씬에 직접 배치한 탄환은 null이다.
     private IObjectPool<Bullet> pool;
 
+    // 탄환의 속성. 무속성 탄환은 None이다.
+    public Element Element { get; private set; }
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
         // Enemy가 Kinematic이므로 트리거 판정을 받으려면 탄환은 Dynamic이어야 합니다.
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.gravityScale = 0f;
@@ -59,13 +64,20 @@ public class Bullet : MonoBehaviour
     }
 
     // damage는 BulletData의 공격력에 가방 블록 스탯을 적용한 값입니다.
-    // 풀에서 다시 꺼내진 탄환도 발사마다 호출되므로, 지난 발사의 소진·관통 상태를 여기서 모두 덮어씁니다.
-    public void Launch(Vector2 direction, BulletData data, int damage, Camera cam)
+    // 풀에서 다시 꺼내진 탄환도 발사마다 호출되므로, 지난 발사의 소진·관통·속성 상태를 여기서 모두 덮어씁니다.
+    public void Launch(Vector2 direction, BulletData data, int damage, Element element, Camera cam)
     {
         spent = false;
         targetCamera = cam;
         remainingPierce = data.Pierce;
         this.damage = damage;
+        Element = element;
+
+        // 탄환 색은 속성 색을 따르며, 무속성은 core 0(스탯 블록) 색이다.
+        if (spriteRenderer != null && BlockManager.Instance != null)
+        {
+            spriteRenderer.color = BlockManager.Instance.GetColorForCore((int)element);
+        }
 
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0f, 0f, angle);

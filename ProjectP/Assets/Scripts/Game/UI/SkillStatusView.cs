@@ -80,8 +80,8 @@ public class SkillStatusView : MonoBehaviour
         var lines = new List<string>();
         foreach (var skill in skills)
         {
-            // 탄환 외의 스킬은 아직 동작하지 않는다.
-            string notImplemented = skill.Skill == SkillType.Bullet ? string.Empty : " (미구현)";
+            // 탄환 외의 스킬은 구현되기 전까지 임시로 탄환으로 쏜다.
+            string notImplemented = skill.Skill == SkillType.Bullet ? string.Empty : " (미구현, 임시로 탄환 발사)";
             lines.Add($"{GetSkillName(skill.Skill)} - {ColorElement(skill.Element)} : 블록 {skill.BlockCount}개, 점수 {skill.Score}{notImplemented}");
         }
 
