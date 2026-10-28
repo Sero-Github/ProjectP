@@ -37,6 +37,31 @@ public class EnemyEditor : Editor
                 EditorGUILayout.FloatField("이동 속도", enemy.Data.MoveSpeed);
             }
         }
+
+        DrawElementStatus(enemy.ElementStatus);
+    }
+
+    // 주입된 속성과 스택, 속성 효과로 바뀐 배율을 보여준다.
+    private static void DrawElementStatus(EnemyElementStatus status)
+    {
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("속성", EditorStyles.boldLabel);
+
+        if (status == null)
+        {
+            EditorGUILayout.HelpBox("ElementSettings가 연결되지 않아 속성 효과가 적용되지 않습니다.", MessageType.Warning);
+            return;
+        }
+
+        using (new EditorGUI.DisabledScope(true))
+        {
+            EditorGUILayout.EnumPopup("주입된 속성", status.Element);
+            EditorGUILayout.TextField("스택별 속성 공격력", status.Stacks.Count > 0 ? string.Join(", ", status.Stacks) : "-");
+            EditorGUILayout.FloatField("이동 속도 배율", status.MoveSpeedMultiplier);
+            EditorGUILayout.FloatField("공격 속도 배율", status.AttackSpeedMultiplier);
+            EditorGUILayout.FloatField("방어력 감소", status.DefenseReduction);
+            EditorGUILayout.FloatField("파랑 잔여 시간(초)", Mathf.Max(0f, status.LingeringTime));
+        }
     }
 
     // 피격 시 체력이 바로 갱신되도록 플레이 중에는 계속 다시 그린다.
