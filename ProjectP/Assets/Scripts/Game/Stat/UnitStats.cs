@@ -9,7 +9,7 @@ public class UnitStats
     [Min(1)]
     [SerializeField] private int maxHp = 100;
 
-    [Tooltip("방어력. 받는 대미지를 고정 값으로 줄입니다. (적용 대미지 = 대미지 - 방어력, 최소 1)")]
+    [Tooltip("방어력. 받는 대미지를 고정 값으로 줄입니다. (적용 대미지 = 대미지 - 방어력, 음수면 0)")]
     [Min(0)]
     [SerializeField] private int defense = 0;
 
@@ -34,7 +34,13 @@ public class UnitStats
 
     public int ApplyDefense(int damage)
     {
-        return Mathf.Max(1, damage - defense);
+        return ApplyDefense(damage, defense);
+    }
+
+    // 적용 대미지 = 대미지 - 방어력. 음수가 되면 대미지를 무시한다.
+    public static int ApplyDefense(int damage, int defense)
+    {
+        return Mathf.Max(0, damage - defense);
     }
 
     // 소수점 이하는 버린다.

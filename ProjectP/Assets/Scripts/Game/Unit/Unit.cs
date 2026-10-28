@@ -21,7 +21,7 @@ public abstract class Unit : MonoBehaviour
         CurrentHp = stats.MaxHp;
     }
 
-    // 방어력을 적용해 실제로 깎인 체력을 돌려준다. 이미 죽었다면 0이다.
+    // 방어력을 적용해 실제로 깎인 체력을 돌려준다. 이미 죽었거나 방어력에 모두 막히면 0이다.
     public int TakeDamage(int damage)
     {
         if (IsDead)
@@ -29,7 +29,12 @@ public abstract class Unit : MonoBehaviour
             return 0;
         }
 
-        int applied = Mathf.Min(stats.ApplyDefense(damage), CurrentHp);
+        int applied = Mathf.Min(ApplyDefense(damage), CurrentHp);
+        if (applied <= 0)
+        {
+            return 0;
+        }
+
         CurrentHp -= applied;
         HpChanged?.Invoke(this);
 
@@ -39,6 +44,12 @@ public abstract class Unit : MonoBehaviour
         }
 
         return applied;
+    }
+
+    // 받는 대미지에 방어력을 적용한다. 방어력이 일시적으로 바뀌는 개체는 재정의한다.
+    protected virtual int ApplyDefense(int damage)
+    {
+        return stats.ApplyDefense(damage);
     }
 
     // 회복 증가를 적용해 실제로 회복된 체력을 돌려준다. 최대 체력을 넘지 않는다.
