@@ -111,6 +111,7 @@ MonoBehaviour:
     defense: 0
     healIncrease: 0
   data: {fileID: 11400000, guid: 4735428245e1702469ad0316e36afc13, type: 2}
+  elementSettings: {fileID: 11400000, guid: 63088926274e4f8692baf4817f7a6e74, type: 2}
 --- !u!61 &5267488274027097092
 BoxCollider2D:
   m_ObjectHideFlags: 0

@@ -111,6 +111,7 @@ MonoBehaviour:
     defense: 0
     healIncrease: 0
   data: {fileID: 11400000, guid: fe34f04195e4d01478b51867b0c3846e, type: 2}
+  elementSettings: {fileID: 11400000, guid: 63088926274e4f8692baf4817f7a6e74, type: 2}
 --- !u!60 &5954753931532706661
 PolygonCollider2D:
   m_ObjectHideFlags: 0

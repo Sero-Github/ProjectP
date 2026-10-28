@@ -10,13 +10,13 @@ public class Bullet : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Camera targetCamera;
     private int remainingPierce;
-    private int damage;
+    private ElementHit hit;
     private bool spent;
     // BulletShooter가 만든 탄환은 사라질 때 파괴하지 않고 이 풀로 돌아간다. 씬에 직접 배치한 탄환은 null이다.
     private IObjectPool<Bullet> pool;
 
     // 탄환의 속성. 무속성 탄환은 None이다.
-    public Element Element { get; private set; }
+    public Element Element => hit.Element;
 
     private void Awake()
     {
@@ -47,7 +47,7 @@ public class Bullet : MonoBehaviour
             return;
         }
 
-        enemy.TakeDamage(damage);
+        enemy.TakeHit(hit);
 
         if (remainingPierce > 0)
         {
@@ -63,20 +63,19 @@ public class Bullet : MonoBehaviour
         pool = bulletPool;
     }
 
-    // damage는 BulletData의 공격력에 가방 블록 스탯을 적용한 값입니다.
+    // hit은 BulletData의 공격력에 가방 블록 스탯을 적용한 타격입니다. 관통한 적 모두에게 같은 타격을 줍니다.
     // 풀에서 다시 꺼내진 탄환도 발사마다 호출되므로, 지난 발사의 소진·관통·속성 상태를 여기서 모두 덮어씁니다.
-    public void Launch(Vector2 direction, BulletData data, int damage, Element element, Camera cam)
+    public void Launch(Vector2 direction, BulletData data, ElementHit hit, Camera cam)
     {
         spent = false;
         targetCamera = cam;
         remainingPierce = data.Pierce;
-        this.damage = damage;
-        Element = element;
+        this.hit = hit;
 
         // 탄환 색은 속성 색을 따르며, 무속성은 core 0(스탯 블록) 색이다.
         if (spriteRenderer != null && BlockManager.Instance != null)
         {
-            spriteRenderer.color = BlockManager.Instance.GetColorForCore((int)element);
+            spriteRenderer.color = BlockManager.Instance.GetColorForCore((int)hit.Element);
         }
 
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;

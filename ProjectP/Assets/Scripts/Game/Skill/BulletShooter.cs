@@ -190,11 +190,13 @@ public class BulletShooter : MonoBehaviour
             }
         }
 
-        int damage = blockStats.ApplyDamage(data.Attack, blockStats.GetElementAttack(lane.Element) + bonusElementAttack);
+        // 속성 효과는 대미지 증가가 적용되지 않은 속성 공격력으로 계산하므로 타격 대미지와 함께 넘깁니다.
+        int elementAttack = blockStats.GetElementAttack(lane.Element) + bonusElementAttack;
+        var hit = new ElementHit(blockStats.ApplyDamage(data.Attack, elementAttack), lane.Element, elementAttack);
 
         foreach (Enemy target in targets)
         {
-            Fire(target, damage, lane.Element);
+            Fire(target, hit);
             targetedThisFrame.Add(target);
         }
 
@@ -256,7 +258,7 @@ public class BulletShooter : MonoBehaviour
         return viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f;
     }
 
-    private void Fire(Enemy target, int damage, Element element)
+    private void Fire(Enemy target, ElementHit hit)
     {
         Vector2 origin = transform.position;
         Vector2 direction = ((Vector2)target.transform.position - origin).normalized;
@@ -268,6 +270,6 @@ public class BulletShooter : MonoBehaviour
         Bullet bullet = pool.Get();
         bullet.transform.SetPositionAndRotation(origin, Quaternion.identity);
         bullet.gameObject.SetActive(true);
-        bullet.Launch(direction, data, damage, element, targetCamera);
+        bullet.Launch(direction, data, hit, targetCamera);
     }
 }

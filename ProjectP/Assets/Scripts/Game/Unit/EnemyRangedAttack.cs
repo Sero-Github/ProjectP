@@ -44,7 +44,8 @@ public class EnemyRangedAttack : MonoBehaviour
             return;
         }
 
-        timer = data.Cooldown;
+        // 노랑(감전) 속성을 가진 동안에는 공격 속도가 느려진다.
+        timer = data.Cooldown / enemy.AttackSpeedMultiplier;
         Fire(player);
     }
 

@@ -111,6 +111,7 @@ MonoBehaviour:
     defense: 0
     healIncrease: 0
   data: {fileID: 11400000, guid: cd7d54a214da26e479fa4a240fdead73, type: 2}
+  elementSettings: {fileID: 11400000, guid: 63088926274e4f8692baf4817f7a6e74, type: 2}
 --- !u!58 &1782808815368434472
 CircleCollider2D:
   m_ObjectHideFlags: 0

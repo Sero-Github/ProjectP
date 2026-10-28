@@ -10,16 +10,26 @@ public class Enemy : Unit
     private static readonly List<Enemy> actives = new List<Enemy>();
     public static IReadOnlyList<Enemy> Actives => actives;
 
+    // 폭발 대상을 고를 때 쓰는 actives 복사본. 폭발로 죽은 몬스터가 actives에서 빠져도 순회가 깨지지 않게 한다.
+    private static readonly List<Enemy> explosionTargets = new List<Enemy>();
+
     // 체력이 0이 되어 죽었을 때 발생합니다.
     public static event Action<Enemy> Killed;
 
     // 체력, 방어력, 공격력, 속도는 모두 이 데이터와 레벨로 계산합니다. 인스펙터의 Stats 값은 덮어씌워집니다.
     [SerializeField] private EnemyData data;
+    // 속성 주입 효과의 수치. 없으면 속성 효과 없이 대미지만 받습니다.
+    [SerializeField] private ElementSettings elementSettings;
 
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
+    // 속성이 주입되지 않았을 때의 색. 풀에서 다시 꺼내질 때 이 색으로 돌아간다.
+    private Color baseColor;
+    private EnemyElementStatus elementStatus;
     private Player contactTarget;
     private float contactTimer;
+    private Vector2 knockbackVelocity;
+    private float knockbackTimer;
     // 스포너가 만든 몬스터는 사망하면 파괴하지 않고 이 풀로 돌아간다. 씬에 직접 배치한 몬스터는 null이다.
     private IObjectPool<Enemy> pool;
 
@@ -27,6 +37,10 @@ public class Enemy : Unit
     public int Level { get; private set; }
     public int Attack { get; private set; }
     public int Gold { get; private set; }
+    // 속성 주입 상태. ElementSettings가 연결되지 않았으면 null이다.
+    public EnemyElementStatus ElementStatus => elementStatus;
+    // 노랑(감전) 속성으로 공격 속도가 느려진 배율. 공격 간격을 이 값으로 나눈다.
+    public float AttackSpeedMultiplier => elementStatus != null ? elementStatus.AttackSpeedMultiplier : 1f;
 
     protected override void Awake()
     {
@@ -37,7 +51,17 @@ public class Enemy : Unit
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
 
         spriteRenderer = GetComponent<SpriteRenderer>();
+        baseColor = spriteRenderer != null ? spriteRenderer.color : Color.white;
         GetComponent<Collider2D>().isTrigger = true;
+
+        if (elementSettings != null)
+        {
+            elementStatus = new EnemyElementStatus(elementSettings);
+        }
+        else
+        {
+            Debug.LogWarning($"{name}: ElementSettings가 연결되지 않아 속성 효과가 적용되지 않습니다.", this);
+        }
 
         // 씬에 직접 배치된 경우를 위해 1레벨로 초기화해 두고, 스포너가 생성 직후 다시 초기화합니다.
         Initialize(1);
@@ -54,6 +78,7 @@ public class Enemy : Unit
         actives.Remove(this);
         contactTarget = null;
         contactTimer = 0f;
+        knockbackTimer = 0f;
     }
 
     public void SetPool(IObjectPool<Enemy> enemyPool)
@@ -74,12 +99,85 @@ public class Enemy : Unit
         SetStats(data.CreateStats(Level));
         Attack = data.GetAttack(Level);
         Gold = data.GetGold(Level);
+
+        elementStatus?.Reset();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = baseColor;
+        }
+    }
+
+    // 공격 스킬의 타격. 속성을 주입(색 변경)한 뒤 대미지를 주므로, 이 타격으로 죽으면 주입된 속성 색으로 사망 파티클이 나온다.
+    public void TakeHit(ElementHit hit)
+    {
+        if (IsDead)
+        {
+            return;
+        }
+
+        if (elementStatus == null)
+        {
+            TakeDamage(hit.Damage);
+            return;
+        }
+
+        EnemyElementStatus.HitResult result = elementStatus.Apply(hit);
+        if (result.Injected && spriteRenderer != null)
+        {
+            spriteRenderer.color = GetElementColor(elementStatus.Element);
+        }
+
+        // 이 타격으로 죽어 풀로 돌아가도 폭발은 맞은 자리에서 일어난다.
+        Vector2 position = transform.position;
+        TakeDamage(hit.Damage);
+
+        if (result.ExplosionDamage > 0)
+        {
+            Explode(position, result.ExplosionDamage);
+        }
+
+        if (result.KnockbackMultiplier > 0f && !IsDead)
+        {
+            StartKnockback(result.KnockbackMultiplier);
+        }
+    }
+
+    // 파랑(방어력 감소) 속성은 스탯 방어력을 먼저 계산한 뒤 비율로 깎는다.
+    protected override int ApplyDefense(int damage)
+    {
+        float reduction = elementStatus != null ? elementStatus.DefenseReduction : 0f;
+        int defense = Mathf.FloorToInt(stats.Defense * (1f - reduction) + 0.0001f);
+        return UnitStats.ApplyDefense(damage, defense);
+    }
+
+    private void Update()
+    {
+        if (elementStatus == null || IsDead)
+        {
+            return;
+        }
+
+        // 감전, 독 대미지
+        int damage = elementStatus.Tick(Time.deltaTime);
+        if (damage > 0)
+        {
+            TakeDamage(damage);
+        }
     }
 
     private void FixedUpdate()
     {
         if (data == null)
         {
+            return;
+        }
+
+        // 넉백되는 동안에는 추적과 근접 공격을 멈춘다. 화면 밖으로 밀려나도 사라지지 않고 다시 걸어온다.
+        if (knockbackTimer > 0f)
+        {
+            float step = Mathf.Min(knockbackTimer, Time.fixedDeltaTime);
+            knockbackTimer -= Time.fixedDeltaTime;
+            rb.MovePosition(rb.position + knockbackVelocity * step);
             return;
         }
 
@@ -90,7 +188,7 @@ public class Enemy : Unit
             if (contactTimer <= 0f)
             {
                 contactTarget.TakeDamage(Attack);
-                contactTimer = data.ContactInterval;
+                contactTimer = data.ContactInterval / AttackSpeedMultiplier;
             }
             return;
         }
@@ -101,8 +199,58 @@ public class Enemy : Unit
             return;
         }
 
-        Vector2 next = Vector2.MoveTowards(rb.position, player.transform.position, data.MoveSpeed * Time.fixedDeltaTime);
+        float moveSpeed = data.MoveSpeed * (elementStatus != null ? elementStatus.MoveSpeedMultiplier : 1f);
+        Vector2 next = Vector2.MoveTowards(rb.position, player.transform.position, moveSpeed * Time.fixedDeltaTime);
         rb.MovePosition(next);
+    }
+
+    // 빨강 폭발. 반경 안의 다른 몬스터에게 속성 주입 없이 대미지를 준다.
+    private void Explode(Vector2 center, int damage)
+    {
+        float radius = elementSettings.ExplosionRadius;
+        ElementExplosionEffect.Play(center, radius, GetElementColor(Element.Red));
+
+        explosionTargets.Clear();
+        explosionTargets.AddRange(actives);
+
+        float sqrRadius = radius * radius;
+        foreach (Enemy enemy in explosionTargets)
+        {
+            if (enemy != this && !enemy.IsDead && ((Vector2)enemy.transform.position - center).sqrMagnitude <= sqrRadius)
+            {
+                enemy.TakeDamage(damage);
+            }
+        }
+
+        explosionTargets.Clear();
+    }
+
+    // 회색 넉백. 플레이어 반대 방향으로 (이동 속도 * 배율 * multiplier)만큼 밀려난다.
+    private void StartKnockback(float multiplier)
+    {
+        Player player = Player.Instance;
+        if (player == null)
+        {
+            return;
+        }
+
+        Vector2 direction = rb.position - (Vector2)player.transform.position;
+        direction = direction.sqrMagnitude > 0.000001f ? direction.normalized : Vector2.up;
+
+        float distance = data.MoveSpeed * elementSettings.KnockbackDistanceMultiplier * multiplier;
+        knockbackTimer = elementSettings.KnockbackDuration;
+        knockbackVelocity = direction * (distance / knockbackTimer);
+    }
+
+    // 속성 색은 탄환, 블록과 같은 core 색을 쓴다. 속성이 없으면 원래 색이다.
+    private Color GetElementColor(Element element)
+    {
+        if (element == Element.None || BlockManager.Instance == null)
+        {
+            return baseColor;
+        }
+
+        return BlockManager.Instance.GetColorForCore((int)element);
     }
 
     protected override void OnDied()

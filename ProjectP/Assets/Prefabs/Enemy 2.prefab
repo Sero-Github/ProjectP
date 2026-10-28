@@ -112,6 +112,7 @@ MonoBehaviour:
     defense: 0
     healIncrease: 0
   data: {fileID: 11400000, guid: ef6f4a0e19372a2418be086637a04b5f, type: 2}
+  elementSettings: {fileID: 11400000, guid: 63088926274e4f8692baf4817f7a6e74, type: 2}
 --- !u!114 &3517204986215340871
 MonoBehaviour:
   m_ObjectHideFlags: 0
