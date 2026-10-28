@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ec88752aa084e2fbd33a40307416adc, type: 3}
+  m_Name: ElementSettings
+  m_EditorClassIdentifier: Assembly-CSharp::ElementSettings
+  tickInterval: 1
+  explosionRadius: 1.5
+  orangeExtraStacks: 1
+  orangeKnockbackMultiplier: 1.5
+  shockDamagePercent: 5
+  attackSlowBase: 5
+  attackSlowPer100: 5
+  attackSlowMax: 40
+  moveSlowBase: 10
+  moveSlowPer100: 5
+  moveSlowMax: 40
+  defenseReductionBase: 10
+  defenseReductionPer100: 10
+  defenseReductionMax: 100
+  defenseReductionLinger: 5
+  poisonDamagePercent: 10
+  poisonMaxStacks: 5
+  knockbackDistanceMultiplier: 3
+  knockbackDuration: 0.2
