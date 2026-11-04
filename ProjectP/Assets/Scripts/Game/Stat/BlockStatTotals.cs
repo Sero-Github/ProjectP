@@ -78,4 +78,16 @@ public class BlockStatTotals
 
         return cooldown * multiplier;
     }
+
+    // 실제 스킬 지속 시간 = 스킬 지속 시간 * (1 + 지속 시간 증가%). extraPercent는 스킬 점수 보너스로 얻은 증가량이며 합 적용한다.
+    public float ApplyDuration(float duration, int extraPercent = 0)
+    {
+        return duration * (1f + (Get(StatType.SkillDurationIncrease) + extraPercent) * 0.01f);
+    }
+
+    // 실제 스킬 범위 = 스킬 범위 * (1 + 범위 증가%). extraPercent는 스킬 점수 보너스로 얻은 증가량이며 합 적용한다.
+    public float ApplyRange(float range, int extraPercent = 0)
+    {
+        return range * (1f + (Get(StatType.SkillRangeIncrease) + extraPercent) * 0.01f);
+    }
 }

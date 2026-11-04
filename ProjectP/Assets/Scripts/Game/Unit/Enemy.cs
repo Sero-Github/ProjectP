@@ -22,6 +22,7 @@ public class Enemy : Unit
     [SerializeField] private ElementSettings elementSettings;
 
     private Rigidbody2D rb;
+    private Collider2D bodyCollider;
     private SpriteRenderer spriteRenderer;
     // 속성이 주입되지 않았을 때의 색. 풀에서 다시 꺼내질 때 이 색으로 돌아간다.
     private Color baseColor;
@@ -41,6 +42,15 @@ public class Enemy : Unit
     public EnemyElementStatus ElementStatus => elementStatus;
     // 노랑(감전) 속성으로 공격 속도가 느려진 배율. 공격 간격을 이 값으로 나눈다.
     public float AttackSpeedMultiplier => elementStatus != null ? elementStatus.AttackSpeedMultiplier : 1f;
+    // 몸체 콜라이더를 감싸는 원의 반지름. 공격 지대에 닿았는지, 지원 크리쳐가 얼마나 지나갈지 계산할 때 쓴다.
+    public float BodyRadius
+    {
+        get
+        {
+            Vector3 extents = bodyCollider.bounds.extents;
+            return Mathf.Max(extents.x, extents.y);
+        }
+    }
 
     protected override void Awake()
     {
@@ -52,7 +62,8 @@ public class Enemy : Unit
 
         spriteRenderer = GetComponent<SpriteRenderer>();
         baseColor = spriteRenderer != null ? spriteRenderer.color : Color.white;
-        GetComponent<Collider2D>().isTrigger = true;
+        bodyCollider = GetComponent<Collider2D>();
+        bodyCollider.isTrigger = true;
 
         if (elementSettings != null)
         {

@@ -4,6 +4,23 @@ using UnityEngine.Pool;
 [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
 public class Bullet : MonoBehaviour
 {
+    // 광역 탄환이 적에게 닿아 소멸할 때 만드는 공격 지대. 발사 순간의 블록 스탯으로 정해진다.
+    public readonly struct AreaImpact
+    {
+        public AreaImpact(float radius, float duration, float growTime, float shrinkTime)
+        {
+            Radius = radius;
+            Duration = duration;
+            GrowTime = growTime;
+            ShrinkTime = shrinkTime;
+        }
+
+        public float Radius { get; }
+        public float Duration { get; }
+        public float GrowTime { get; }
+        public float ShrinkTime { get; }
+    }
+
     [SerializeField] private float offscreenMargin = 0.5f;
 
     private Rigidbody2D rb;
@@ -12,6 +29,9 @@ public class Bullet : MonoBehaviour
     private int remainingPierce;
     private ElementHit hit;
     private bool spent;
+    // 광역 탄환이면 true. 적을 직접 타격하지 않고 닿은 자리에 공격 지대를 만든다.
+    private bool hasAreaImpact;
+    private AreaImpact areaImpact;
     // BulletShooter가 만든 탄환은 사라질 때 파괴하지 않고 이 풀로 돌아간다. 씬에 직접 배치한 탄환은 null이다.
     private IObjectPool<Bullet> pool;
 
@@ -47,6 +67,15 @@ public class Bullet : MonoBehaviour
             return;
         }
 
+        // 공격 지대는 생기는 순간 안에 있는 적을 바로 타격하므로, 탄환이 따로 타격하지 않는다.
+        if (hasAreaImpact)
+        {
+            AttackZoneSystem.SpawnArea(transform.position, areaImpact.Radius, areaImpact.Duration,
+                areaImpact.GrowTime, areaImpact.ShrinkTime, hit);
+            Despawn();
+            return;
+        }
+
         enemy.TakeHit(hit);
 
         if (remainingPierce > 0)
@@ -68,6 +97,7 @@ public class Bullet : MonoBehaviour
     public void Launch(Vector2 direction, float moveSpeed, int pierce, ElementHit hit, Camera cam)
     {
         spent = false;
+        hasAreaImpact = false;
         targetCamera = cam;
         remainingPierce = pierce;
         this.hit = hit;
@@ -83,6 +113,14 @@ public class Bullet : MonoBehaviour
         rb.rotation = angle;
         rb.linearVelocity = direction * moveSpeed;
         rb.angularVelocity = 0f;
+    }
+
+    // 광역 탄환. 처음 닿은 적의 자리에 공격 지대를 만들고 소멸하며, 화면 밖으로 나가 사라지면 지대를 만들지 않는다.
+    public void LaunchArea(Vector2 direction, float moveSpeed, AreaImpact impact, ElementHit hit, Camera cam)
+    {
+        Launch(direction, moveSpeed, 0, hit, cam);
+        hasAreaImpact = true;
+        areaImpact = impact;
     }
 
     // 같은 물리 스텝에 다른 적과 또 닿아도 두 번 반환되지 않도록 먼저 소진 처리합니다.

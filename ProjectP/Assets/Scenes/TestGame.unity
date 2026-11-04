@@ -356,6 +356,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BulletShooter
   basicData: {fileID: 11400000, guid: 0ae6c8ad2520480b982bca13bff064ae, type: 2}
   elementData: {fileID: 11400000, guid: 6eb7c9be53fc4f32943883c49402219f, type: 2}
+  areaData: {fileID: 11400000, guid: d8cdba8c70844641a6cddf7827cf8136, type: 2}
   bulletPrefab: {fileID: 5120394817263540006, guid: 76f26732c1b64519a41ae15b67701edd, type: 3}
   bulletParent: {fileID: 1734200002}
   targetCamera: {fileID: 1443061902}
