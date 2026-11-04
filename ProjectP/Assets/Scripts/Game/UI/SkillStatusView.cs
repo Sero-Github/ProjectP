@@ -80,8 +80,7 @@ public class SkillStatusView : MonoBehaviour
         var lines = new List<string>();
         foreach (var skill in skills)
         {
-            string notImplemented = skill.Skill == SkillType.Support ? " (미구현)" : string.Empty;
-            lines.Add($"{GetSkillName(skill.Skill)} - {ColorElement(skill.Element)} : 블록 {skill.BlockCount}개, 점수 {skill.Score}{notImplemented}");
+            lines.Add($"{GetSkillName(skill.Skill)} - {ColorElement(skill.Element)} : 블록 {skill.BlockCount}개, 점수 {skill.Score}");
         }
 
         AppendLines(lines);

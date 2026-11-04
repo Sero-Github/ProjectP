@@ -213,6 +213,7 @@ GameObject:
   - component: {fileID: 1152780750}
   - component: {fileID: 1152780749}
   - component: {fileID: 1152780751}
+  - component: {fileID: 1152780752}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -360,6 +361,21 @@ MonoBehaviour:
   bulletPrefab: {fileID: 5120394817263540006, guid: 76f26732c1b64519a41ae15b67701edd, type: 3}
   bulletParent: {fileID: 1734200002}
   targetCamera: {fileID: 1443061902}
+--- !u!114 &1152780752
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1152780746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fc8dfa2cf2c400b9b6fb6c45802f569, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SupportShooter
+  data: {fileID: 11400000, guid: d374a371bc3e46d281957162329c6508, type: 2}
+  targetCamera: {fileID: 1443061902}
+  sortingOrder: 2
 --- !u!1 &1162400521
 GameObject:
   m_ObjectHideFlags: 0
