@@ -63,13 +63,13 @@ public class Bullet : MonoBehaviour
         pool = bulletPool;
     }
 
-    // hit은 BulletData의 공격력에 가방 블록 스탯을 적용한 타격입니다. 관통한 적 모두에게 같은 타격을 줍니다.
+    // hit은 스킬 데이터의 공격력에 가방 블록 스탯을 적용한 타격입니다. 관통한 적 모두에게 같은 타격을 줍니다.
     // 풀에서 다시 꺼내진 탄환도 발사마다 호출되므로, 지난 발사의 소진·관통·속성 상태를 여기서 모두 덮어씁니다.
-    public void Launch(Vector2 direction, BulletData data, ElementHit hit, Camera cam)
+    public void Launch(Vector2 direction, float moveSpeed, int pierce, ElementHit hit, Camera cam)
     {
         spent = false;
         targetCamera = cam;
-        remainingPierce = data.Pierce;
+        remainingPierce = pierce;
         this.hit = hit;
 
         // 탄환 색은 속성 색을 따르며, 무속성은 core 0(스탯 블록) 색이다.
@@ -81,7 +81,7 @@ public class Bullet : MonoBehaviour
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0f, 0f, angle);
         rb.rotation = angle;
-        rb.linearVelocity = direction * data.MoveSpeed;
+        rb.linearVelocity = direction * moveSpeed;
         rb.angularVelocity = 0f;
     }
 

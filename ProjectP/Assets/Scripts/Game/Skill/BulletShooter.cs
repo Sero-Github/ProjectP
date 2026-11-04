@@ -1,21 +1,25 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
+using UnityEngine.Serialization;
 
 // 가방에 배치된 탄환 스킬 블록의 속성마다 탄환을 따로 쏜다. ⚔️ 스킬 문서 3-1을 따른다.
 // 탄환 블록이 하나도 없으면 무속성 탄환만 쏘고, 하나라도 배치되면 무속성 탄환은 멈춘다.
+// 무속성 탄환은 basicData, 속성 탄환은 elementData의 수치를 쓴다.
 // 광역 탄환과 지원은 구현되기 전까지 임시로 탄환으로 쏜다(FiresAsBullet).
 public class BulletShooter : MonoBehaviour
 {
     // 속성 하나의 탄환 발사 상태. 쿨타임은 속성마다 따로 흐른다.
     private class Lane
     {
-        public Lane(Element element)
+        public Lane(Element element, BulletData data)
         {
             Element = element;
+            Data = data;
         }
 
         public Element Element { get; }
+        public BulletData Data { get; }
         // 같은 속성 탄환 블록의 스킬 점수 합계. 무속성은 0이다.
         public int Score { get; set; }
         public float CooldownTimer { get; set; }
@@ -27,12 +31,15 @@ public class BulletShooter : MonoBehaviour
     private const float MinCooldown = 0.05f;
 
     // 스킬 점수 보너스(📊 스탯 4-1). 1점당 속성 공격력이 오르고, 10점마다 아래 보너스를 순서대로 반복합니다.
-    private const int ScorePerBonus = 10;
     private const int BonusElementAttack = 10;
     private const float BonusCooldownMultiplier = 0.95f;
     private const int BonusProjectileCount = 1;
 
-    [SerializeField] private BulletData data;
+    [Tooltip("무속성 탄환. 공격 스킬 블록이 없을 때만 쏩니다.")]
+    [FormerlySerializedAs("data")]
+    [SerializeField] private BulletData basicData;
+    [Tooltip("속성 탄환. 탄환 스킬 블록의 속성마다 쏩니다.")]
+    [SerializeField] private BulletData elementData;
     [SerializeField] private Bullet bulletPrefab;
     [SerializeField] private Transform bulletParent;
     [SerializeField] private Camera targetCamera;
@@ -40,8 +47,8 @@ public class BulletShooter : MonoBehaviour
     private readonly List<Enemy> targets = new List<Enemy>();
     // 이번 프레임에 다른 속성 탄환이 이미 조준한 적. 같은 프레임에 쏘는 속성끼리는 가능하면 다른 적을 노린다.
     private readonly HashSet<Enemy> targetedThisFrame = new HashSet<Enemy>();
-    // 탄환 블록이 없으면 무속성 lane 하나만 있다.
-    private readonly List<Lane> lanes = new List<Lane> { new Lane(Element.None) };
+    // 탄환 블록이 없으면 무속성 lane 하나만 있다. Awake에서 만든다.
+    private readonly List<Lane> lanes = new List<Lane>();
     // 마지막으로 어떤 속성이든 탄환을 쏜 시각. 첫 발 간격을 둘 때 쓴다.
     private float lastFireTime = float.NegativeInfinity;
     // 화면 밖으로 나가거나 관통을 다 쓴 탄환은 비활성화되어 여기로 돌아오고, 다음 발사 때 재사용된다.
@@ -55,6 +62,18 @@ public class BulletShooter : MonoBehaviour
         }
 
         pool = CreatePool();
+        lanes.Add(new Lane(Element.None, basicData));
+
+        // 데이터가 빠진 lane은 조용히 쏘지 않으므로, 어떤 탄환이 빠졌는지 시작할 때 알린다.
+        if (basicData == null)
+        {
+            Debug.LogWarning($"{name}: 무속성 탄환 데이터(basicData)가 연결되지 않아 무속성 탄환을 쏘지 않습니다.", this);
+        }
+
+        if (elementData == null)
+        {
+            Debug.LogWarning($"{name}: 속성 탄환 데이터(elementData)가 연결되지 않아 속성 탄환을 쏘지 않습니다.", this);
+        }
     }
 
     private void Start()
@@ -129,7 +148,7 @@ public class BulletShooter : MonoBehaviour
                 continue;
             }
 
-            lane = previous.Find(l => l.Element == state.Element) ?? new Lane(state.Element);
+            lane = previous.Find(l => l.Element == state.Element) ?? new Lane(state.Element, elementData);
             lane.Score = state.Score;
             lanes.Add(lane);
         }
@@ -137,13 +156,13 @@ public class BulletShooter : MonoBehaviour
         // 탄환 블록이 없으면 무속성 탄환을 쏜다.
         if (lanes.Count == 0)
         {
-            lanes.Add(previous.Find(l => l.Element == Element.None) ?? new Lane(Element.None));
+            lanes.Add(previous.Find(l => l.Element == Element.None) ?? new Lane(Element.None, basicData));
         }
     }
 
     private void Update()
     {
-        if (data == null || bulletPrefab == null || targetCamera == null)
+        if (bulletPrefab == null || targetCamera == null)
         {
             return;
         }
@@ -157,15 +176,22 @@ public class BulletShooter : MonoBehaviour
 
     private void UpdateLane(Lane lane)
     {
+        BulletData data = lane.Data;
+        if (data == null)
+        {
+            return;
+        }
+
         lane.CooldownTimer -= Time.deltaTime;
         if (lane.CooldownTimer > 0f)
         {
             return;
         }
 
-        GetScoreBonus(lane.Score, out int bonusElementAttack, out int bonusCooldownCount, out int bonusProjectileCount);
+        // 1점당 속성 공격력 +1, 10점마다 [속성 공격력 +10 → 쿨타임 감소 5% → 탄환 개수 +1]을 순서대로 반복합니다.
+        var score = new SkillScore(lane.Score);
 
-        CollectTargets(data.ProjectileCount + bonusProjectileCount);
+        CollectTargets(data.ProjectileCount + BonusProjectileCount * score.ThirdCount);
         if (targets.Count == 0)
         {
             // 쏠 대상이 없으면 쿨타임은 흐르지 않고, 적이 들어오는 즉시 발사합니다.
@@ -191,31 +217,20 @@ public class BulletShooter : MonoBehaviour
         }
 
         // 속성 효과는 대미지 증가가 적용되지 않은 속성 공격력으로 계산하므로 타격 대미지와 함께 넘깁니다.
-        int elementAttack = blockStats.GetElementAttack(lane.Element) + bonusElementAttack;
+        int elementAttack = blockStats.GetElementAttack(lane.Element) + score.ElementAttack + BonusElementAttack * score.FirstCount;
         var hit = new ElementHit(blockStats.ApplyDamage(data.Attack, elementAttack), lane.Element, elementAttack);
 
         foreach (Enemy target in targets)
         {
-            Fire(target, hit);
+            Fire(target, data, hit);
             targetedThisFrame.Add(target);
         }
 
         lane.WaitingFirstShot = false;
         lastFireTime = Time.time;
 
-        float cooldown = blockStats.ApplyCooldown(data.Cooldown) * Mathf.Pow(BonusCooldownMultiplier, bonusCooldownCount);
+        float cooldown = blockStats.ApplyCooldown(data.Cooldown) * Mathf.Pow(BonusCooldownMultiplier, score.SecondCount);
         lane.CooldownTimer = Mathf.Max(MinCooldown, cooldown);
-    }
-
-    // 1점당 속성 공격력 +1, 10점마다 [속성 공격력 +10 → 쿨타임 감소 5% → 탄환 개수 +1]을 순서대로 반복합니다.
-    // 50점이면 보너스 5번이므로 속성 공격력 +10 두 번, 쿨타임 감소 두 번, 탄환 개수 +1 한 번입니다.
-    private static void GetScoreBonus(int score, out int elementAttack, out int cooldownCount, out int projectileCount)
-    {
-        int bonusCount = Mathf.Max(0, score) / ScorePerBonus;
-
-        elementAttack = Mathf.Max(0, score) + BonusElementAttack * ((bonusCount + 2) / 3);
-        cooldownCount = (bonusCount + 1) / 3;
-        projectileCount = BonusProjectileCount * (bonusCount / 3);
     }
 
     // 화면 안의 적 중 가까운 순으로 최대 count마리를 중복 없이 고릅니다.
@@ -258,7 +273,7 @@ public class BulletShooter : MonoBehaviour
         return viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f;
     }
 
-    private void Fire(Enemy target, ElementHit hit)
+    private void Fire(Enemy target, BulletData data, ElementHit hit)
     {
         Vector2 origin = transform.position;
         Vector2 direction = ((Vector2)target.transform.position - origin).normalized;
@@ -270,6 +285,6 @@ public class BulletShooter : MonoBehaviour
         Bullet bullet = pool.Get();
         bullet.transform.SetPositionAndRotation(origin, Quaternion.identity);
         bullet.gameObject.SetActive(true);
-        bullet.Launch(direction, data, hit, targetCamera);
+        bullet.Launch(direction, data.MoveSpeed, data.Pierce, hit, targetCamera);
     }
 }
