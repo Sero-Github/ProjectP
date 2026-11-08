@@ -71,6 +71,13 @@ public abstract class Unit : MonoBehaviour
         return healed;
     }
 
+    // 죽었더라도 체력을 최대 체력으로 채운다.
+    protected void RestoreFullHp()
+    {
+        CurrentHp = stats.MaxHp;
+        HpChanged?.Invoke(this);
+    }
+
     // 스탯을 교체하고 체력을 새 최대 체력으로 채운다.
     protected void SetStats(UnitStats newStats)
     {

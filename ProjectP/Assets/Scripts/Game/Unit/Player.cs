@@ -6,7 +6,7 @@ public class Player : Unit
 {
     public static Player Instance { get; private set; }
 
-    // 게임오버 처리가 생기기 전까지는 이벤트만 발생시킵니다.
+    // 체력이 0이 되면 발생합니다. RoundManager가 받아 이전 라운드로 되돌립니다.
     public static event Action Died;
 
     // 인스펙터의 Stats는 블록을 적용하기 전 기본 스탯이며 수정하지 않습니다. (HP = 100 + X)
@@ -64,6 +64,12 @@ public class Player : Unit
             baseStats.MaxHp + blockStats.Get(StatType.Hp),
             baseStats.Defense + blockStats.Get(StatType.Defense),
             baseStats.HealIncrease + blockStats.Get(StatType.HealIncrease)));
+    }
+
+    // 라운드를 시작할 때마다 체력을 가득 채운다. 사망한 상태에서도 되살아난다.
+    public void Revive()
+    {
+        RestoreFullHp();
     }
 
     protected override void OnDied()
