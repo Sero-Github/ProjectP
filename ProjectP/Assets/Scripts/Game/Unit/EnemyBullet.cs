@@ -10,6 +10,9 @@ public class EnemyBullet : MonoBehaviour
     private static readonly Dictionary<EnemyBullet, ObjectPool<EnemyBullet>> pools = new Dictionary<EnemyBullet, ObjectPool<EnemyBullet>>();
     // 풀의 탄환을 모아 두는 부모. 씬이 바뀌어 파괴되면 안의 탄환도 함께 사라지므로 풀을 모두 새로 만든다.
     private static Transform poolRoot;
+    // 날아가는 중인 탄환. 플레이어가 사망하면 모두 없앤다.
+    private static readonly List<EnemyBullet> actives = new List<EnemyBullet>();
+    private static readonly List<EnemyBullet> despawnTargets = new List<EnemyBullet>();
 
     [Tooltip("화면 경계에서 이 거리(유닛)만큼 더 벗어나면 사라집니다.")]
     [Min(0f)]
@@ -68,6 +71,32 @@ public class EnemyBullet : MonoBehaviour
         return bulletPool;
     }
 
+    // 날아가는 중인 탄환을 모두 없앤다.
+    public static void DespawnAll()
+    {
+        despawnTargets.Clear();
+        despawnTargets.AddRange(actives);
+        foreach (EnemyBullet bullet in despawnTargets)
+        {
+            if (bullet != null && !bullet.spent)
+            {
+                bullet.Despawn();
+            }
+        }
+
+        despawnTargets.Clear();
+    }
+
+    private void OnEnable()
+    {
+        actives.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        actives.Remove(this);
+    }
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -122,7 +151,11 @@ public class EnemyBullet : MonoBehaviour
         }
 
         player.TakeDamage(damage);
-        Despawn();
+        // 이 대미지로 플레이어가 사망하면 DespawnAll로 이미 반환되었을 수 있다.
+        if (!spent)
+        {
+            Despawn();
+        }
     }
 
     // 같은 물리 스텝에 다시 닿아도 두 번 반환되지 않도록 먼저 소진 처리한다.

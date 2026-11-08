@@ -94,11 +94,13 @@ public class AttackZoneSystem : MonoBehaviour
     private void OnEnable()
     {
         Enemy.Killed += OnEnemyKilled;
+        Enemy.Despawned += OnEnemyKilled;
     }
 
     private void OnDisable()
     {
         Enemy.Killed -= OnEnemyKilled;
+        Enemy.Despawned -= OnEnemyKilled;
     }
 
     private void OnDestroy()

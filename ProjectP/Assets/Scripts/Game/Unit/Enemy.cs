@@ -15,6 +15,8 @@ public class Enemy : Unit
 
     // 체력이 0이 되어 죽었을 때 발생합니다.
     public static event Action<Enemy> Killed;
+    // 처치가 아닌 이유(플레이어 사망 등)로 사라졌을 때 발생합니다. 몬스터별 기록을 지울 때 Killed와 함께 구독합니다.
+    public static event Action<Enemy> Despawned;
 
     // 체력, 방어력, 공격력, 속도는 모두 이 데이터와 레벨로 계산합니다. 인스펙터의 Stats 값은 덮어씌워집니다.
     [SerializeField] private EnemyData data;
@@ -269,7 +271,28 @@ public class Enemy : Unit
         Killed?.Invoke(this);
         // 몬스터 모양과 현재 색(주입된 속성의 색)으로 조각나며 사라진다.
         EnemyDeathParticles.Play(spriteRenderer);
+        ReturnToPool();
+    }
 
+    // 처치가 아닌 이유(플레이어 사망 등)로 몬스터를 없앤다. Killed를 발생시키지 않으므로 블록, 골드를 드랍하지 않는다.
+    public void Despawn(bool playParticles)
+    {
+        if (!gameObject.activeSelf)
+        {
+            return;
+        }
+
+        if (playParticles)
+        {
+            EnemyDeathParticles.Play(spriteRenderer);
+        }
+
+        Despawned?.Invoke(this);
+        ReturnToPool();
+    }
+
+    private void ReturnToPool()
+    {
         if (pool != null)
         {
             gameObject.SetActive(false);

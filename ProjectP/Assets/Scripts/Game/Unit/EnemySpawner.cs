@@ -1,53 +1,47 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
+// 라운드마다 정해진 소환 순서(SpawnSequence)대로, 라운드 시간 동안 같은 간격으로 몬스터를 소환한다.
+// 어떤 라운드를 언제 시작할지는 RoundManager가 정한다.
 public class EnemySpawner : MonoBehaviour
 {
-    [System.Serializable]
-    private class SpawnEntry
+    [Serializable]
+    private class TypePrefab
     {
+        [SerializeField] private EnemyType type;
         [SerializeField] private Enemy prefab;
 
-        [Tooltip("스폰 가중치. 실제 확률 = 가중치 / 스폰 가능한 항목의 가중치 합. 합을 100으로 맞추면 그대로 %가 됩니다.")]
-        [Min(0f)]
-        [SerializeField] private float weight = 1f;
-
-        [Tooltip("한 스테이지에서 생성될 수 있는 최대 개수. 0이면 제한이 없습니다. 다 채우면 남은 항목끼리 확률을 나눕니다.")]
-        [Min(0)]
-        [SerializeField] private int maxPerStage = 0;
-
+        public EnemyType Type => type;
         public Enemy Prefab => prefab;
-        public float Weight => weight;
-        public int SpawnedThisStage { get; set; }
         // 이 프리팹으로 만든 몬스터 풀. 사망한 몬스터는 비활성화되어 여기로 돌아오고, 다음 생성 때 재사용된다.
         public ObjectPool<Enemy> Pool { get; set; }
-
-        public bool CanSpawn => prefab != null && weight > 0f && (maxPerStage == 0 || SpawnedThisStage < maxPerStage);
     }
 
-    [SerializeField] private List<SpawnEntry> entries = new List<SpawnEntry>();
+    [Tooltip("몬스터 유형별 프리팹. 유형마다 하나씩 연결합니다.")]
+    [SerializeField] private List<TypePrefab> prefabs = new List<TypePrefab>();
     [SerializeField] private Transform enemyParent;
     [SerializeField] private Camera targetCamera;
-    [SerializeField] private float spawnInterval = 1f;
     [SerializeField] private float spawnMargin = 1f;
-    [SerializeField] private int maxEnemies = 0;
 
-    // 라운드 진행이 생기기 전까지는 인스펙터 값으로 레벨을 정합니다.
-    [Header("스테이지")]
-    [Min(1)]
-    [SerializeField] private int stage = 1;
+    // 사망 처리 등에서 Enemy.Actives를 순회하며 몬스터를 없앨 때 쓰는 복사본.
+    private readonly List<Enemy> despawnTargets = new List<Enemy>();
+    private readonly Dictionary<EnemyType, TypePrefab> prefabByType = new Dictionary<EnemyType, TypePrefab>();
 
-    [Min(1)]
-    [SerializeField] private int round = 1;
-
-    [Min(1)]
-    [SerializeField] private int roundsPerStage = 10;
-
+    private List<EnemyType> sequence;
+    private int nextIndex;
+    private float interval;
     private float timer;
+    private int level = 1;
 
-    // 1스테이지 10라운드는 10, 2스테이지 1라운드는 11입니다.
-    public int Level => (stage - 1) * roundsPerStage + round;
+    // 이번 라운드에 소환할 몬스터가 남아 있는지
+    public bool IsSpawning => sequence != null && nextIndex < sequence.Count;
+    public int SpawnedCount => nextIndex;
+    public int TotalCount => sequence != null ? sequence.Count : 0;
+
+    // 이번 라운드의 마지막 몬스터를 소환했을 때 발생합니다.
+    public event Action SpawnFinished;
 
     private void Awake()
     {
@@ -61,15 +55,27 @@ public class EnemySpawner : MonoBehaviour
             enemyParent = transform;
         }
 
-        foreach (SpawnEntry entry in entries)
+        foreach (TypePrefab entry in prefabs)
         {
+            if (entry.Prefab == null)
+            {
+                continue;
+            }
+
+            if (prefabByType.ContainsKey(entry.Type))
+            {
+                Debug.LogWarning($"{name}: {entry.Type} 프리팹이 중복 연결되어 처음 것만 사용합니다.", this);
+                continue;
+            }
+
             entry.Pool = CreatePool(entry);
+            prefabByType.Add(entry.Type, entry);
         }
     }
 
     // 비활성화된 몬스터가 있으면 꺼내 쓰고, 없을 때만 새로 만든다.
-    // 위치를 옮긴 뒤 켜야 이전 위치에서 보간되지 않으므로, 꺼내고 돌려줄 때 켜고 끄는 것은 SpawnEnemy와 Enemy가 맡는다.
-    private ObjectPool<Enemy> CreatePool(SpawnEntry entry)
+    // 위치를 옮긴 뒤 켜야 이전 위치에서 보간되지 않으므로, 꺼내고 돌려줄 때 켜고 끄는 것은 Spawn과 Enemy가 맡는다.
+    private ObjectPool<Enemy> CreatePool(TypePrefab entry)
     {
         ObjectPool<Enemy> pool = null;
         pool = new ObjectPool<Enemy>(
@@ -92,111 +98,85 @@ public class EnemySpawner : MonoBehaviour
         return pool;
     }
 
+    // 소환 순서 전체를 duration초 동안 같은 간격(duration / 개수)으로 소환한다. 첫 몬스터는 첫 간격이 지난 뒤 나온다.
+    public void StartRound(List<EnemyType> spawnSequence, float duration, int roundLevel)
+    {
+        sequence = spawnSequence ?? new List<EnemyType>();
+        nextIndex = 0;
+        timer = 0f;
+        level = Mathf.Max(1, roundLevel);
+        interval = sequence.Count > 0 ? Mathf.Max(0.0001f, duration) / sequence.Count : 0f;
+
+        if (sequence.Count == 0)
+        {
+            SpawnFinished?.Invoke();
+        }
+    }
+
+    // 남은 소환을 취소한다. 이미 나온 몬스터는 그대로 둔다.
+    public void StopSpawning()
+    {
+        sequence = null;
+        nextIndex = 0;
+        timer = 0f;
+    }
+
+    // 살아 있는 몬스터를 모두 없앤다. 처치가 아니므로 블록, 골드를 드랍하지 않는다.
+    public void DespawnAll(bool playParticles)
+    {
+        despawnTargets.Clear();
+        despawnTargets.AddRange(Enemy.Actives);
+        foreach (Enemy enemy in despawnTargets)
+        {
+            if (enemy != null && enemy.gameObject.activeSelf)
+            {
+                enemy.Despawn(playParticles);
+            }
+        }
+
+        despawnTargets.Clear();
+    }
+
     private void Update()
     {
-        timer += Time.deltaTime;
-        if (timer < spawnInterval)
+        if (!IsSpawning)
         {
             return;
         }
 
-        timer -= spawnInterval;
-        SpawnEnemy();
+        timer += Time.deltaTime;
+        // 프레임이 길어져 간격을 여러 번 넘겨도 밀린 만큼 모두 소환한다.
+        while (timer >= interval && IsSpawning)
+        {
+            timer -= interval;
+            Spawn(sequence[nextIndex]);
+            nextIndex++;
+        }
+
+        if (!IsSpawning)
+        {
+            SpawnFinished?.Invoke();
+        }
     }
 
-    public Enemy SpawnEnemy()
+    public Enemy Spawn(EnemyType type)
     {
         if (targetCamera == null)
         {
             return null;
         }
 
-        // 몬스터 부모 아래에는 풀에서 쉬는 비활성 몬스터도 있으므로 자식 수 대신 살아 있는 수를 센다.
-        if (maxEnemies > 0 && CountActive() >= maxEnemies)
+        if (!prefabByType.TryGetValue(type, out TypePrefab entry))
         {
-            return null;
-        }
-
-        SpawnEntry entry = PickEntry();
-        if (entry == null)
-        {
+            Debug.LogError($"{name}: {type} 프리팹이 연결되지 않아 소환하지 못했습니다.", this);
             return null;
         }
 
         Enemy enemy = entry.Pool.Get();
         enemy.transform.SetPositionAndRotation(GetSpawnPosition(), Quaternion.identity);
-        enemy.Initialize(Level);
+        enemy.Initialize(level);
         enemy.gameObject.SetActive(true);
-        entry.SpawnedThisStage++;
         return enemy;
-    }
-
-    private int CountActive()
-    {
-        int count = 0;
-        foreach (SpawnEntry entry in entries)
-        {
-            if (entry.Pool != null)
-            {
-                count += entry.Pool.CountActive;
-            }
-        }
-
-        return count;
-    }
-
-    // 스테이지가 바뀌면 스테이지당 생성 개수 제한을 초기화합니다.
-    public void SetRound(int newStage, int newRound)
-    {
-        newStage = Mathf.Max(1, newStage);
-        if (newStage != stage)
-        {
-            foreach (SpawnEntry entry in entries)
-            {
-                entry.SpawnedThisStage = 0;
-            }
-        }
-
-        stage = newStage;
-        round = Mathf.Max(1, newRound);
-    }
-
-    // 스폰 가능한 항목 중 가중치에 비례한 확률로 하나를 고릅니다.
-    private SpawnEntry PickEntry()
-    {
-        float total = 0f;
-        foreach (SpawnEntry entry in entries)
-        {
-            if (entry.CanSpawn)
-            {
-                total += entry.Weight;
-            }
-        }
-
-        if (total <= 0f)
-        {
-            return null;
-        }
-
-        float pick = Random.value * total;
-        SpawnEntry last = null;
-        foreach (SpawnEntry entry in entries)
-        {
-            if (!entry.CanSpawn)
-            {
-                continue;
-            }
-
-            last = entry;
-            pick -= entry.Weight;
-            if (pick < 0f)
-            {
-                return entry;
-            }
-        }
-
-        // Random.value가 1이거나 부동소수점 오차가 남으면 마지막 후보를 고릅니다.
-        return last;
     }
 
     private Vector3 GetSpawnPosition()
@@ -204,7 +184,7 @@ public class EnemySpawner : MonoBehaviour
         Vector2 half = GetSpawnHalfExtents(targetCamera);
         float width = half.x * 2f;
         float height = half.y * 2f;
-        float t = Random.Range(0f, (width + height) * 2f);
+        float t = UnityEngine.Random.Range(0f, (width + height) * 2f);
 
         Vector2 offset;
         if (t < width)
