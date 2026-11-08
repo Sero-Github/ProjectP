@@ -37,6 +37,7 @@ public abstract class Unit : MonoBehaviour
 
         CurrentHp -= applied;
         HpChanged?.Invoke(this);
+        OnDamaged(applied);
 
         if (IsDead)
         {
@@ -44,6 +45,11 @@ public abstract class Unit : MonoBehaviour
         }
 
         return applied;
+    }
+
+    // 체력이 실제로 깎인 직후, 사망 처리(OnDied)보다 먼저 호출된다.
+    protected virtual void OnDamaged(int applied)
+    {
     }
 
     // 받는 대미지에 방어력을 적용한다. 방어력이 일시적으로 바뀌는 개체는 재정의한다.

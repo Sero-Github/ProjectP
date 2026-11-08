@@ -200,8 +200,15 @@ public class Enemy : Unit
             contactTimer -= Time.fixedDeltaTime;
             if (contactTimer <= 0f)
             {
-                contactTarget.TakeDamage(Attack);
+                Player target = contactTarget;
                 contactTimer = data.ContactInterval / AttackSpeedMultiplier;
+
+                // 대미지를 주면 살짝 밀려난다. 방어력에 모두 막혀 대미지가 0이면 밀려나지 않는다.
+                // 이 대미지로 플레이어가 죽으면 모든 몬스터가 풀로 돌아가므로(비활성) 넉백하지 않는다.
+                if (target.TakeDamage(Attack) > 0 && gameObject.activeSelf)
+                {
+                    Knockback(target.transform.position, target.ContactKnockbackDistance, target.ContactKnockbackDuration);
+                }
             }
             return;
         }
@@ -247,12 +254,23 @@ public class Enemy : Unit
             return;
         }
 
-        Vector2 direction = rb.position - (Vector2)player.transform.position;
+        float distance = data.MoveSpeed * elementSettings.KnockbackDistanceMultiplier * multiplier;
+        Knockback(player.transform.position, distance, elementSettings.KnockbackDuration);
+    }
+
+    // origin 반대 방향으로 duration초 동안 distance만큼 밀려난다. 밀려나는 동안은 추적과 근접 공격을 멈춘다.
+    public void Knockback(Vector2 origin, float distance, float duration)
+    {
+        if (distance <= 0f || duration <= 0f)
+        {
+            return;
+        }
+
+        Vector2 direction = rb.position - origin;
         direction = direction.sqrMagnitude > 0.000001f ? direction.normalized : Vector2.up;
 
-        float distance = data.MoveSpeed * elementSettings.KnockbackDistanceMultiplier * multiplier;
-        knockbackTimer = elementSettings.KnockbackDuration;
-        knockbackVelocity = direction * (distance / knockbackTimer);
+        knockbackTimer = duration;
+        knockbackVelocity = direction * (distance / duration);
     }
 
     // 속성 색은 탄환, 블록과 같은 core 색을 쓴다. 속성이 없으면 원래 색이다.

@@ -1148,8 +1148,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoundManager
   stageCsv: {fileID: 4900000, guid: 076f8fbd22713cc4e98374f1563ef36e, type: 3}
   spawner: {fileID: 1102757565}
-  roundDuration: 100
+  roundDuration: 20
   transitionDelay: 3
+  defeatDelay: 3
 --- !u!4 &643765019
 Transform:
   m_ObjectHideFlags: 0
@@ -2199,6 +2200,11 @@ MonoBehaviour:
     maxHp: 100
     defense: 0
     healIncrease: 0
+  blinkDuration: 2
+  blinkMinAlpha: 0.2
+  blinkPeriod: 0.2
+  contactKnockbackDistance: 0.8
+  contactKnockbackDuration: 0.15
 --- !u!58 &1152780750
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -4063,7 +4069,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e70ce90c1530034eaa344cac70de1c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlockDropper
-  dropChance: 0.3
+  dropChance: 0.8
   storage: {fileID: 877232792}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

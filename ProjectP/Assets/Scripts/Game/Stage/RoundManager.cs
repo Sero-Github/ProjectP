@@ -6,7 +6,7 @@ using UnityEngine;
 // - 라운드마다 CSV의 몬스터를 roundDuration초 동안 모두 소환하고, 다 소환한 뒤 모든 몬스터를 처치하면 승리한다.
 // - 승리하면 다음 라운드(없으면 다음 스테이지 첫 라운드)로, 사망하면 이전 라운드(없으면 이전 스테이지 마지막 라운드)로 간다.
 // - 라운드가 끝날 때마다(승리, 패배 모두) 다음에 시작할 라운드를 자동 저장한다.
-// - 라운드를 시작할 때마다 플레이어 체력을 가득 채운다.
+// - 라운드를 시작할 때마다 플레이어 체력을 가득 채운다. 사망해 사라진 플레이어는 defeatDelay초 뒤 이때 다시 나타난다.
 public class RoundManager : MonoBehaviour
 {
     private enum State
@@ -33,9 +33,13 @@ public class RoundManager : MonoBehaviour
     [Min(1f)]
     [SerializeField] private float roundDuration = 100f;
 
-    [Tooltip("라운드가 끝나고 다음 라운드를 시작하기까지 기다리는 시간(초)")]
+    [Tooltip("라운드에서 승리하고 다음 라운드를 시작하기까지 기다리는 시간(초)")]
     [Min(0f)]
     [SerializeField] private float transitionDelay = 2f;
+
+    [Tooltip("플레이어가 사망하고 다시 나타나 이전 라운드를 시작하기까지 기다리는 시간(초)")]
+    [Min(0f)]
+    [SerializeField] private float defeatDelay = 3f;
 
     private StageTable table;
     private SaveData save;
@@ -193,14 +197,14 @@ public class RoundManager : MonoBehaviour
             StopCoroutine(transition);
         }
 
-        transition = StartCoroutine(BeginRoundAfterDelay());
+        transition = StartCoroutine(BeginRoundAfterDelay(victory ? transitionDelay : defeatDelay));
     }
 
-    private IEnumerator BeginRoundAfterDelay()
+    private IEnumerator BeginRoundAfterDelay(float delay)
     {
-        if (transitionDelay > 0f)
+        if (delay > 0f)
         {
-            yield return new WaitForSeconds(transitionDelay);
+            yield return new WaitForSeconds(delay);
         }
 
         BeginRound();
