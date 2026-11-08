@@ -29,6 +29,14 @@ public class Storage : MonoBehaviour, IBlockDropTarget
     public RectTransform RectTransform => rectTransform;
     public int BlockCount => slots.Count;
 
+    // 슬롯 순서대로의 블록 목록. 드래그 중이라 슬롯에서 빠져 있는 블록도 포함한다.
+    public List<Block> GetBlocks()
+    {
+        var blocks = new List<Block>(slotByBlock.Keys);
+        blocks.Sort((a, b) => slots.IndexOf(slotByBlock[a]).CompareTo(slots.IndexOf(slotByBlock[b])));
+        return blocks;
+    }
+
     private void Awake()
     {
         Instance = this;

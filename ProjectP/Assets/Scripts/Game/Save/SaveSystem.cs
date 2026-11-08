@@ -28,6 +28,9 @@ public static class SaveSystem
             }
 
             data.bossClearedStages ??= new System.Collections.Generic.List<int>();
+            // 블록 저장 이전에 만든 저장 파일에는 blocks가 없다.
+            data.blocks ??= new System.Collections.Generic.List<BlockSaveData>();
+            data.blocks.RemoveAll(block => block == null);
             return data;
         }
         catch (Exception e)

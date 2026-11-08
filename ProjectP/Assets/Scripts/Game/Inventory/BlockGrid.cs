@@ -39,13 +39,36 @@ public abstract class BlockGrid : MonoBehaviour, IBlockDropTarget
 
     protected virtual void Awake()
     {
+        EnsureInitialized();
+    }
+
+    // 인벤토리 패널이 꺼져 있으면 Awake가 아직 불리지 않았을 수 있어,
+    // 그 상태에서 저장된 블록을 배치해도 동작하도록 초기화를 따로 둔다.
+    public void EnsureInitialized()
+    {
+        if (rectTransform != null)
+        {
+            return;
+        }
+
         rectTransform = GetComponent<RectTransform>();
         BuildGrid();
+        OnInitialized();
+    }
+
+    protected virtual void OnInitialized()
+    {
     }
 
     protected virtual void OnEnable()
     {
         BlockDropTargets.Register(this);
+
+        // 꺼진 상태에서 배치된 블록은 그때의 크기로 계산되었으므로 켜질 때 다시 맞춘다.
+        if (occupied != null)
+        {
+            RefreshLayout();
+        }
     }
 
     protected virtual void OnDisable()
@@ -196,6 +219,8 @@ public abstract class BlockGrid : MonoBehaviour, IBlockDropTarget
 
     public bool CanPlaceBlock(Block block, Vector2Int originCell)
     {
+        EnsureInitialized();
+
         foreach (var offset in block.GetPieceOffsets())
         {
             if (!IsCellFree(originCell + offset))
@@ -209,6 +234,8 @@ public abstract class BlockGrid : MonoBehaviour, IBlockDropTarget
 
     public void PlaceBlock(Block block, Vector2Int originCell)
     {
+        EnsureInitialized();
+
         foreach (var offset in block.GetPieceOffsets())
         {
             Vector2Int cell = originCell + offset;
@@ -269,6 +296,14 @@ public abstract class BlockGrid : MonoBehaviour, IBlockDropTarget
         }
 
         return cells;
+    }
+
+    // 드래그로 들어 올려 잠시 빠져 있는 블록과 원래 칸. 드롭에 실패하면 이 칸으로 돌아온다.
+    public bool TryGetDetachedBlock(out Block block, out Vector2Int cell)
+    {
+        block = detachedBlock;
+        cell = detachedCell;
+        return block != null;
     }
 
     // 드래그 중인 블록의 코어 조각이 놓인 칸을 기준으로 배치한다.

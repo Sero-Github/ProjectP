@@ -5,7 +5,7 @@ using UnityEngine;
 // 스테이지, 라운드 진행. 🏰 스테이지 문서 2, 4, 5를 따른다.
 // - 라운드마다 CSV의 몬스터를 roundDuration초 동안 모두 소환하고, 다 소환한 뒤 모든 몬스터를 처치하면 승리한다.
 // - 승리하면 다음 라운드(없으면 다음 스테이지 첫 라운드)로, 사망하면 이전 라운드(없으면 이전 스테이지 마지막 라운드)로 간다.
-// - 라운드가 끝날 때마다(승리, 패배 모두) 다음에 시작할 라운드를 자동 저장한다.
+// - 라운드가 끝날 때마다(승리, 패배 모두) 다음에 시작할 라운드와 가지고 있는 블록(창고, 가방 배치)을 자동 저장한다.
 // - 라운드를 시작할 때마다 플레이어 체력을 가득 채운다. 사망해 사라진 플레이어는 defeatDelay초 뒤 이때 다시 나타난다.
 public class RoundManager : MonoBehaviour
 {
@@ -116,6 +116,9 @@ public class RoundManager : MonoBehaviour
             CurrentRound = table.GetFirstRound(CurrentStage);
         }
 
+        // 라운드를 시작하며 체력을 채우기 전에 가방을 채워야 블록 스탯(체력 등)이 반영된다.
+        InventorySaver.Restore(save);
+
         BeginRound();
     }
 
@@ -188,6 +191,7 @@ public class RoundManager : MonoBehaviour
 
         save.stage = CurrentStage;
         save.round = CurrentRound;
+        InventorySaver.Capture(save);
         SaveSystem.Save(save);
 
         RoundEnded?.Invoke(endedStage, endedRound, victory);

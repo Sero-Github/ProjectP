@@ -94,6 +94,48 @@ public class BlockManager : MonoBehaviour
         return block;
     }
 
+    // 저장된 블록을 다시 만든다. 블록 번호에 맞는 프리팹이 있으면 프리팹으로, 없으면(병합 블록) 저장된 모양으로 조립한다.
+    public Block CreateBlock(BlockSaveData data)
+    {
+        if (data == null)
+        {
+            return null;
+        }
+
+        var stat = new BlockStat(data.StatType, data.statValue);
+        int prefabIndex = data.blockId - 1;
+
+        if (blockPrefabs != null && prefabIndex >= 0 && prefabIndex < blockPrefabs.Count && blockPrefabs[prefabIndex] != null)
+        {
+            Block block = Instantiate(blockPrefabs[prefabIndex]);
+            block.SetBlockId(data.blockId);
+            block.SetGrade(data.grade);
+            block.SetMergeCount(data.mergeCount);
+            // SetStat, SetSkill은 core에 따라 값을 거르므로 core를 먼저 정한다.
+            block.SetCore(data.core);
+            block.SetStat(stat);
+            block.SetSkill(data.SkillType, data.skillScore);
+            block.ApplyColor(GetColorForCore(block.Core));
+            return block;
+        }
+
+        if (data.pieces == null || data.pieces.Count == 0)
+        {
+            Debug.LogWarning($"저장된 블록(번호 {data.blockId})의 모양 정보가 없어 불러오지 못했습니다.");
+            return null;
+        }
+
+        // 저장된 조각 오프셋은 코어 칸이 (0,0)이다.
+        Block merged = CreateMergedBlock(data.core, data.grade, data.mergeCount, stat, data.SkillType, data.skillScore,
+            data.pieces, Vector2Int.zero);
+        if (merged != null)
+        {
+            merged.SetBlockId(data.blockId);
+        }
+
+        return merged;
+    }
+
     public Color GetColorForCore(int coreId)
     {
         if (coreColorLookup != null && coreColorLookup.TryGetValue(coreId, out var color))

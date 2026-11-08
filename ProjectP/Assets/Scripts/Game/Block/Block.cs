@@ -183,6 +183,11 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         grade = Mathf.Max(1, blockGrade);
     }
 
+    public void SetMergeCount(int count)
+    {
+        mergeCount = Mathf.Max(0, count);
+    }
+
     // 스탯 블록(core 0)이 아니면 스탯은 항상 None이다.
     public void SetStat(BlockStat blockStat)
     {
