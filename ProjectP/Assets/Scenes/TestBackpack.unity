@@ -1012,7 +1012,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 121328015}
   m_HandleRect: {fileID: 121328014}
   m_Direction: 2
-  m_Value: 0.9999998
+  m_Value: 1
   m_Size: 0.5777778
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -1115,8 +1115,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Invaid Message
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e41df03daeff8084bad06f89fcff79c7, type: 2}
+  m_sharedMaterial: {fileID: 7447671075461547420, guid: e41df03daeff8084bad06f89fcff79c7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1396,7 +1396,6 @@ MonoBehaviour:
   slotOutlineThickness: 3
   slotOutlineColor: {r: 0, g: 0, b: 0, a: 0.6}
   slotFillColor: {r: 1, g: 1, b: 1, a: 0.3}
-  dropArea: {fileID: 0}
 --- !u!1 &1027368905
 GameObject:
   m_ObjectHideFlags: 0
@@ -2562,8 +2561,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f2d0a5e069a30547b3e3de621cc9332, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectP.Game.UIManager
+  inventoryPanel: {fileID: 0}
   backpackPanel: {fileID: 2105860461}
   mergePanel: {fileID: 1423382822}
+  mergeButton: {fileID: 0}
 --- !u!4 &1821628918
 Transform:
   m_ObjectHideFlags: 0
@@ -2751,8 +2752,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Merge
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e41df03daeff8084bad06f89fcff79c7, type: 2}
+  m_sharedMaterial: {fileID: 7447671075461547420, guid: e41df03daeff8084bad06f89fcff79c7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
