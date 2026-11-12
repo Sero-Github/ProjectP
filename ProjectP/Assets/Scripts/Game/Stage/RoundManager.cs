@@ -25,21 +25,9 @@ public class RoundManager : MonoBehaviour
     // 스테이지 보스(마지막 라운드)를 처음 처치했을 때. 보상 내용은 기획 미정이다.
     public static event Action<int> BossFirstCleared;
 
-    [Tooltip("스테이지, 라운드, 원형, 삼각형, 사각형, 오각형 열을 가진 CSV")]
-    [SerializeField] private TextAsset stageCsv;
+    [Tooltip("스테이지 CSV, 라운드 시간 등 라운드 진행 설정")]
+    [SerializeField] private RoundSettings settings;
     [SerializeField] private EnemySpawner spawner;
-
-    [Tooltip("한 라운드에서 모든 몬스터를 소환하는 시간(초)")]
-    [Min(1f)]
-    [SerializeField] private float roundDuration = 100f;
-
-    [Tooltip("라운드에서 승리하고 다음 라운드를 시작하기까지 기다리는 시간(초)")]
-    [Min(0f)]
-    [SerializeField] private float transitionDelay = 2f;
-
-    [Tooltip("플레이어가 사망하고 다시 나타나 이전 라운드를 시작하기까지 기다리는 시간(초)")]
-    [Min(0f)]
-    [SerializeField] private float defeatDelay = 3f;
 
     private StageTable table;
     private SaveData save;
@@ -85,6 +73,13 @@ public class RoundManager : MonoBehaviour
 
     private void Start()
     {
+        if (settings == null)
+        {
+            Debug.LogError($"{name}: RoundSettings가 연결되지 않았습니다.", this);
+            enabled = false;
+            return;
+        }
+
         if (spawner == null)
         {
             Debug.LogError($"{name}: EnemySpawner가 연결되지 않았습니다.", this);
@@ -92,7 +87,7 @@ public class RoundManager : MonoBehaviour
             return;
         }
 
-        table = StageTable.Parse(stageCsv);
+        table = StageTable.Parse(settings.StageCsv);
         if (table.IsEmpty)
         {
             enabled = false;
@@ -152,7 +147,7 @@ public class RoundManager : MonoBehaviour
             Player.Instance.Revive();
         }
 
-        spawner.StartRound(SpawnSequence.Build(data.Counts), roundDuration, Level);
+        spawner.StartRound(SpawnSequence.Build(data.Counts), settings.RoundDuration, Level);
         state = State.Playing;
         RoundStarted?.Invoke(CurrentStage, CurrentRound);
     }
@@ -201,7 +196,7 @@ public class RoundManager : MonoBehaviour
             StopCoroutine(transition);
         }
 
-        transition = StartCoroutine(BeginRoundAfterDelay(victory ? transitionDelay : defeatDelay));
+        transition = StartCoroutine(BeginRoundAfterDelay(victory ? settings.TransitionDelay : settings.DefeatDelay));
     }
 
     private IEnumerator BeginRoundAfterDelay(float delay)

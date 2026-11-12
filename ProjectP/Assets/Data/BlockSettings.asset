@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d617d9a7af524714a749b1d2903fbac4, type: 3}
+  m_Name: BlockSettings
+  m_EditorClassIdentifier: Assembly-CSharp::BlockSettings
+  blockPrefabs:
+  - {fileID: 5715012548039622857, guid: 4c270f3786bef5f4aa3f67103aa172df, type: 3}
+  - {fileID: 5715012548039622857, guid: 25e26f12827d72b46a29aa14fa90041d, type: 3}
+  - {fileID: 5715012548039622857, guid: 520509a4fd2143c4c9545718b023bc59, type: 3}
+  - {fileID: 5715012548039622857, guid: 85f71d719ecddaa408bc75b2b40793a4, type: 3}
+  - {fileID: 5715012548039622857, guid: 72c173a81e5574b4988af899d6b00649, type: 3}
+  - {fileID: 5715012548039622857, guid: 9ce3199b6a359d341bece508cd26bc0c, type: 3}
+  - {fileID: 5715012548039622857, guid: a0cd2852968dd464cb4d303126efc97f, type: 3}
+  - {fileID: 5715012548039622857, guid: afc1b76913d6e344ba10858bcad84cee, type: 3}
+  - {fileID: 5715012548039622857, guid: e5c5552db2bc81d4ab040b37c7fa6bde, type: 3}
+  blockPiecePrefab: {fileID: 1049141413385404473, guid: 37859a142b6bbf04f843976b493d3d78, type: 3}
+  coreColors:
+  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 1, g: 0.8666667, b: 0.8666667, a: 1}
+  - {r: 1, g: 0.93333334, b: 0.8666667, a: 1}
+  - {r: 1, g: 1, b: 0.78431374, a: 1}
+  - {r: 0.8666667, g: 1, b: 0.8666667, a: 1}
+  - {r: 0.8666667, g: 0.9647059, b: 1, a: 1}
+  - {r: 0.8666667, g: 0.8666667, b: 1, a: 1}
+  - {r: 0.87058824, g: 0.87058824, b: 0.87058824, a: 1}
+  statData: {fileID: 11400000, guid: 09c0fc0cc0c149ce9370050af414d116, type: 2}
+  dropGrade: 1

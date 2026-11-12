@@ -7,27 +7,15 @@ using UnityEngine.Pool;
 // 어떤 라운드를 언제 시작할지는 RoundManager가 정한다.
 public class EnemySpawner : MonoBehaviour
 {
-    [Serializable]
-    private class TypePrefab
-    {
-        [SerializeField] private EnemyType type;
-        [SerializeField] private Enemy prefab;
-
-        public EnemyType Type => type;
-        public Enemy Prefab => prefab;
-        // 이 프리팹으로 만든 몬스터 풀. 사망한 몬스터는 비활성화되어 여기로 돌아오고, 다음 생성 때 재사용된다.
-        public ObjectPool<Enemy> Pool { get; set; }
-    }
-
-    [Tooltip("몬스터 유형별 프리팹. 유형마다 하나씩 연결합니다.")]
-    [SerializeField] private List<TypePrefab> prefabs = new List<TypePrefab>();
+    [Tooltip("몬스터 유형별 프리팹, 소환 위치 여백 등 몬스터 소환 설정")]
+    [SerializeField] private EnemySpawnSettings settings;
     [SerializeField] private Transform enemyParent;
     [SerializeField] private Camera targetCamera;
-    [SerializeField] private float spawnMargin = 1f;
 
     // 사망 처리 등에서 Enemy.Actives를 순회하며 몬스터를 없앨 때 쓰는 복사본.
     private readonly List<Enemy> despawnTargets = new List<Enemy>();
-    private readonly Dictionary<EnemyType, TypePrefab> prefabByType = new Dictionary<EnemyType, TypePrefab>();
+    // 유형별 몬스터 풀. 사망한 몬스터는 비활성화되어 여기로 돌아오고, 다음 생성 때 재사용된다.
+    private readonly Dictionary<EnemyType, ObjectPool<Enemy>> poolByType = new Dictionary<EnemyType, ObjectPool<Enemy>>();
 
     private List<EnemyType> sequence;
     private int nextIndex;
@@ -55,33 +43,38 @@ public class EnemySpawner : MonoBehaviour
             enemyParent = transform;
         }
 
-        foreach (TypePrefab entry in prefabs)
+        if (settings == null)
         {
-            if (entry.Prefab == null)
+            Debug.LogError($"{name}: EnemySpawnSettings가 연결되지 않았습니다.", this);
+            return;
+        }
+
+        foreach (EnemySpawnSettings.EnemyEntry entry in settings.Enemies)
+        {
+            if (entry == null || entry.Prefab == null)
             {
                 continue;
             }
 
-            if (prefabByType.ContainsKey(entry.Type))
+            if (poolByType.ContainsKey(entry.Type))
             {
-                Debug.LogWarning($"{name}: {entry.Type} 프리팹이 중복 연결되어 처음 것만 사용합니다.", this);
+                Debug.LogWarning($"{name}: {entry.Type} 프리팹이 중복 연결되어 처음 것만 사용합니다.", settings);
                 continue;
             }
 
-            entry.Pool = CreatePool(entry);
-            prefabByType.Add(entry.Type, entry);
+            poolByType.Add(entry.Type, CreatePool(entry.Prefab));
         }
     }
 
     // 비활성화된 몬스터가 있으면 꺼내 쓰고, 없을 때만 새로 만든다.
     // 위치를 옮긴 뒤 켜야 이전 위치에서 보간되지 않으므로, 꺼내고 돌려줄 때 켜고 끄는 것은 Spawn과 Enemy가 맡는다.
-    private ObjectPool<Enemy> CreatePool(TypePrefab entry)
+    private ObjectPool<Enemy> CreatePool(Enemy prefab)
     {
         ObjectPool<Enemy> pool = null;
         pool = new ObjectPool<Enemy>(
             createFunc: () =>
             {
-                Enemy enemy = Instantiate(entry.Prefab, enemyParent);
+                Enemy enemy = Instantiate(prefab, enemyParent);
                 enemy.gameObject.SetActive(false);
                 enemy.SetPool(pool);
                 return enemy;
@@ -166,13 +159,13 @@ public class EnemySpawner : MonoBehaviour
             return null;
         }
 
-        if (!prefabByType.TryGetValue(type, out TypePrefab entry))
+        if (!poolByType.TryGetValue(type, out ObjectPool<Enemy> pool))
         {
             Debug.LogError($"{name}: {type} 프리팹이 연결되지 않아 소환하지 못했습니다.", this);
             return null;
         }
 
-        Enemy enemy = entry.Pool.Get();
+        Enemy enemy = pool.Get();
         enemy.transform.SetPositionAndRotation(GetSpawnPosition(), Quaternion.identity);
         enemy.Initialize(level);
         enemy.gameObject.SetActive(true);
@@ -210,6 +203,7 @@ public class EnemySpawner : MonoBehaviour
 
     private Vector2 GetSpawnHalfExtents(Camera cam)
     {
+        float spawnMargin = settings != null ? settings.SpawnMargin : 0f;
         float halfHeight = cam.orthographicSize;
         float halfWidth = halfHeight * cam.aspect;
         return new Vector2(halfWidth + spawnMargin, halfHeight + spawnMargin);

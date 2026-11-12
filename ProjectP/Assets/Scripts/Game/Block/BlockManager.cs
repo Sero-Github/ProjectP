@@ -6,51 +6,38 @@ public class BlockManager : MonoBehaviour
 {
     public static BlockManager Instance { get; private set; }
 
-    // 드랍되는 블록의 등급. 등급별 드랍이 정해지기 전까지는 1등급만 드랍한다.
-    private const int DropGrade = 1;
-
-    // 🧱 블록 문서의 블록 종류 순서대로 둔다. 인덱스 + 1이 블록 번호이다.
-    [SerializeField] private List<Block> blockPrefabs;
-    [SerializeField] private GameObject blockPiecePrefab;
-    // 인덱스가 core 번호이다. 0은 스탯 블록 색상(흰색), 1~7은 Element 속성 색상이다.
-    [SerializeField] private List<Color> coreColors = new List<Color>();
-    [SerializeField] private BlockStatData statData;
-    readonly private Color defaultCoreColor = Color.white;
+    [Tooltip("블록 프리팹, 코어 색상, 스탯 점수 등 블록 생성 설정")]
+    [SerializeField] private BlockSettings settings;
 
     // 속성 블록에 무작위로 부여할 스킬 종류. None은 제외한다.
     private static readonly SkillType[] SkillTypes = Array.FindAll((SkillType[])Enum.GetValues(typeof(SkillType)), type => type != SkillType.None);
-
-    private Dictionary<int, Color> coreColorLookup;
 
     private void Awake()
     {
         Instance = this;
 
-        coreColorLookup = new Dictionary<int, Color>();
-        int count = 0;
-        foreach (var color in coreColors)
+        if (settings == null)
         {
-            coreColorLookup[count] = color;
-            count++;
+            Debug.LogError($"{name}: BlockSettings가 연결되지 않았습니다.", this);
         }
     }
 
     public Block CreateBlock()
     {
-        if (blockPrefabs == null || blockPrefabs.Count == 0)
+        if (settings == null || settings.BlockPrefabs.Count == 0)
         {
             return null;
         }
 
-        int prefabIndex = UnityEngine.Random.Range(0, blockPrefabs.Count);
-        Block block = Instantiate(blockPrefabs[prefabIndex]);
+        int prefabIndex = UnityEngine.Random.Range(0, settings.BlockPrefabs.Count);
+        Block block = Instantiate(settings.BlockPrefabs[prefabIndex]);
 
         block.SetBlockId(prefabIndex + 1);
-        block.SetGrade(DropGrade);
-        block.SetCore(UnityEngine.Random.Range(0, coreColors.Count));
-        if (block.HasStat && statData != null)
+        block.SetGrade(settings.DropGrade);
+        block.SetCore(UnityEngine.Random.Range(0, settings.CoreCount));
+        if (block.HasStat && settings.StatData != null)
         {
-            block.SetStat(statData.CreateRandomStat(block.BlockId));
+            block.SetStat(settings.StatData.CreateRandomStat(block.BlockId));
         }
         if (block.HasSkill)
         {
@@ -67,6 +54,7 @@ public class BlockManager : MonoBehaviour
     public Block CreateMergedBlock(int coreId, int grade, int mergeCount, BlockStat stat, SkillType skill, int skillScore,
         IReadOnlyList<Vector2Int> cells, Vector2Int coreCell)
     {
+        GameObject blockPiecePrefab = settings != null ? settings.BlockPiecePrefab : null;
         if (blockPiecePrefab == null || cells == null || cells.Count == 0)
         {
             return null;
@@ -103,11 +91,11 @@ public class BlockManager : MonoBehaviour
         }
 
         var stat = new BlockStat(data.StatType, data.statValue);
-        int prefabIndex = data.blockId - 1;
+        Block prefab = settings != null ? settings.GetBlockPrefab(data.blockId) : null;
 
-        if (blockPrefabs != null && prefabIndex >= 0 && prefabIndex < blockPrefabs.Count && blockPrefabs[prefabIndex] != null)
+        if (prefab != null)
         {
-            Block block = Instantiate(blockPrefabs[prefabIndex]);
+            Block block = Instantiate(prefab);
             block.SetBlockId(data.blockId);
             block.SetGrade(data.grade);
             block.SetMergeCount(data.mergeCount);
@@ -138,12 +126,7 @@ public class BlockManager : MonoBehaviour
 
     public Color GetColorForCore(int coreId)
     {
-        if (coreColorLookup != null && coreColorLookup.TryGetValue(coreId, out var color))
-        {
-            return color;
-        }
-
-        return defaultCoreColor;
+        return settings != null ? settings.GetCoreColor(coreId) : Color.white;
     }
 
     public IReadOnlyList<Block> GetAllBlocks()

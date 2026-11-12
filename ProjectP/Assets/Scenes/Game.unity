@@ -1146,11 +1146,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9afcd577ef6e8e7469bada617da0a9b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoundManager
-  stageCsv: {fileID: 4900000, guid: 076f8fbd22713cc4e98374f1563ef36e, type: 3}
+  settings: {fileID: 11400000, guid: 816b01bee6ad4ea8a62eb3012833ccbd, type: 2}
   spawner: {fileID: 1102757565}
-  roundDuration: 20
-  transitionDelay: 3
-  defeatDelay: 3
 --- !u!4 &643765019
 Transform:
   m_ObjectHideFlags: 0
@@ -1965,18 +1962,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: baf42116200fe024e81b2ce1415ba911, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  prefabs:
-  - type: 0
-    prefab: {fileID: 4679457134162857850, guid: fad2f8ca5fd507d4ab68fa683d1a858e, type: 3}
-  - type: 1
-    prefab: {fileID: 4679457134162857850, guid: 908b096bddd6dc849a00901074e2d290, type: 3}
-  - type: 2
-    prefab: {fileID: 4679457134162857850, guid: e8f882344592b2c4f8b367f1bc689c34, type: 3}
-  - type: 3
-    prefab: {fileID: 4679457134162857850, guid: 11eb08e60f294a84c8de5dd9757abca4, type: 3}
+  settings: {fileID: 11400000, guid: 1db85755484b4451b6b22ce00e208522, type: 2}
   enemyParent: {fileID: 793453934}
   targetCamera: {fileID: 1443061902}
-  spawnMargin: 1
 --- !u!1 &1109138201
 GameObject:
   m_ObjectHideFlags: 0
@@ -4036,27 +4024,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a792d86c980aa3a47937c88b461a573c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlockManager
-  blockPrefabs:
-  - {fileID: 5715012548039622857, guid: 4c270f3786bef5f4aa3f67103aa172df, type: 3}
-  - {fileID: 5715012548039622857, guid: 25e26f12827d72b46a29aa14fa90041d, type: 3}
-  - {fileID: 5715012548039622857, guid: 520509a4fd2143c4c9545718b023bc59, type: 3}
-  - {fileID: 5715012548039622857, guid: 85f71d719ecddaa408bc75b2b40793a4, type: 3}
-  - {fileID: 5715012548039622857, guid: 72c173a81e5574b4988af899d6b00649, type: 3}
-  - {fileID: 5715012548039622857, guid: 9ce3199b6a359d341bece508cd26bc0c, type: 3}
-  - {fileID: 5715012548039622857, guid: a0cd2852968dd464cb4d303126efc97f, type: 3}
-  - {fileID: 5715012548039622857, guid: afc1b76913d6e344ba10858bcad84cee, type: 3}
-  - {fileID: 5715012548039622857, guid: e5c5552db2bc81d4ab040b37c7fa6bde, type: 3}
-  blockPiecePrefab: {fileID: 1049141413385404473, guid: 37859a142b6bbf04f843976b493d3d78, type: 3}
-  coreColors:
-  - {r: 1, g: 1, b: 1, a: 1}
-  - {r: 1, g: 0.8666667, b: 0.8666667, a: 1}
-  - {r: 1, g: 0.93333334, b: 0.8666667, a: 1}
-  - {r: 1, g: 1, b: 0.78431374, a: 1}
-  - {r: 0.8666667, g: 1, b: 0.8666667, a: 1}
-  - {r: 0.8666667, g: 0.9647059, b: 1, a: 1}
-  - {r: 0.8666667, g: 0.8666667, b: 1, a: 1}
-  - {r: 0.87058824, g: 0.87058824, b: 0.87058824, a: 1}
-  statData: {fileID: 11400000, guid: 09c0fc0cc0c149ce9370050af414d116, type: 2}
+  settings: {fileID: 11400000, guid: 19d42c2f7fa9418780a5d8fab89cafdc, type: 2}
 --- !u!114 &2142834473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4084,5 +4052,5 @@ SceneRoots:
   - {fileID: 399650658}
   - {fileID: 1821628918}
   - {fileID: 2142834471}
-  - {fileID: 575728616}
   - {fileID: 643765019}
+  - {fileID: 575728616}
