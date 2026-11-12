@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 82213258}
   - component: {fileID: 82213257}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: '[Text] Skill'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -344,7 +344,7 @@ GameObject:
   - component: {fileID: 251749325}
   - component: {fileID: 251749327}
   m_Layer: 5
-  m_Name: UI_Skill
+  m_Name: '[Panel] Skill'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -432,7 +432,7 @@ GameObject:
   - component: {fileID: 323810130}
   - component: {fileID: 323810131}
   m_Layer: 5
-  m_Name: UI_MergeSlot (1)
+  m_Name: '[Image] MergeSlot 1'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -489,7 +489,7 @@ GameObject:
   - component: {fileID: 348255340}
   - component: {fileID: 348255339}
   m_Layer: 5
-  m_Name: UI_StorageState
+  m_Name: '[Image] StorageState'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -563,7 +563,7 @@ GameObject:
   - component: {fileID: 357375699}
   - component: {fileID: 357375700}
   m_Layer: 5
-  m_Name: UI_MergeResultSlot
+  m_Name: '[Image] MergeResultSlot'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -704,7 +704,7 @@ GameObject:
   - component: {fileID: 428963512}
   - component: {fileID: 428963511}
   m_Layer: 5
-  m_Name: UI_InvaidMessage
+  m_Name: '[Panel] InvalidMessage'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -780,7 +780,7 @@ GameObject:
   - component: {fileID: 469410343}
   - component: {fileID: 469410342}
   m_Layer: 5
-  m_Name: UI_Image_MergeResult (1)
+  m_Name: '[Image] MergeResult 1'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1177,7 +1177,7 @@ GameObject:
   - component: {fileID: 781413066}
   - component: {fileID: 781413068}
   m_Layer: 5
-  m_Name: UI_Text_Stage
+  m_Name: '[Text] Stage'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1358,7 +1358,7 @@ GameObject:
   - component: {fileID: 848222623}
   - component: {fileID: 848222622}
   m_Layer: 5
-  m_Name: UI_Text_InvaidMessage
+  m_Name: '[Text] InvalidMessage'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1403,7 +1403,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Invaid Message
+  m_text: Invalid Message
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: e41df03daeff8084bad06f89fcff79c7, type: 2}
   m_sharedMaterial: {fileID: 7447671075461547420, guid: e41df03daeff8084bad06f89fcff79c7, type: 2}
@@ -1496,7 +1496,7 @@ GameObject:
   - component: {fileID: 850916399}
   - component: {fileID: 850916398}
   m_Layer: 5
-  m_Name: UI_Button_Merge
+  m_Name: '[Button] OpenMerge'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1627,7 +1627,7 @@ GameObject:
   - component: {fileID: 877232790}
   - component: {fileID: 877232792}
   m_Layer: 5
-  m_Name: Content
+  m_Name: '[Panel] Content'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1685,7 +1685,7 @@ GameObject:
   - component: {fileID: 991654410}
   - component: {fileID: 991654409}
   m_Layer: 5
-  m_Name: UI_Button_Inventory
+  m_Name: '[Button] Inventory'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1815,7 +1815,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1027368906}
   m_Layer: 5
-  m_Name: UI_Image_Merge
+  m_Name: '[Icon] Merge'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1854,7 +1854,7 @@ GameObject:
   - component: {fileID: 1037189490}
   - component: {fileID: 1037189489}
   m_Layer: 5
-  m_Name: UI_Storage
+  m_Name: '[Panel] Storage'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1976,7 +1976,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1109138202}
   m_Layer: 5
-  m_Name: UI_Image_Back
+  m_Name: '[Icon] Back'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2015,7 +2015,7 @@ GameObject:
   - component: {fileID: 1146072124}
   - component: {fileID: 1146072123}
   m_Layer: 5
-  m_Name: UI_Image_Back (2)
+  m_Name: '[Image] Back 2'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2311,7 +2311,7 @@ GameObject:
   - component: {fileID: 1282407866}
   - component: {fileID: 1282407865}
   m_Layer: 5
-  m_Name: UI_Image_Back (1)
+  m_Name: '[Image] Back 1'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2386,7 +2386,7 @@ GameObject:
   - component: {fileID: 1423382825}
   - component: {fileID: 1423382824}
   m_Layer: 5
-  m_Name: UI_Merge
+  m_Name: '[Panel] Merge'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2467,7 +2467,7 @@ GameObject:
   - component: {fileID: 1436029751}
   - component: {fileID: 1436029750}
   m_Layer: 5
-  m_Name: UI_Image_MergeResult (3)
+  m_Name: '[Image] MergeResult 3'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2680,7 +2680,7 @@ GameObject:
   - component: {fileID: 1471492717}
   - component: {fileID: 1471492716}
   m_Layer: 5
-  m_Name: UI_Button_Merge
+  m_Name: '[Button] Merge'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2812,7 +2812,7 @@ GameObject:
   - component: {fileID: 1585815695}
   - component: {fileID: 1585815694}
   m_Layer: 5
-  m_Name: UI_Image_Merge (1)
+  m_Name: '[Image] Merge 1'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2887,7 +2887,7 @@ GameObject:
   - component: {fileID: 1617025577}
   - component: {fileID: 1617025576}
   m_Layer: 5
-  m_Name: UI_Panel_Inventory
+  m_Name: '[Panel] Inventory'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2969,7 +2969,7 @@ GameObject:
   - component: {fileID: 1732655029}
   - component: {fileID: 1732655028}
   m_Layer: 5
-  m_Name: UI_Button_Back
+  m_Name: '[Button] Back'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3132,7 +3132,7 @@ GameObject:
   - component: {fileID: 1740515530}
   - component: {fileID: 1740515529}
   m_Layer: 5
-  m_Name: UI_Image_MergeResult (2)
+  m_Name: '[Image] MergeResult 2'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3296,7 +3296,7 @@ GameObject:
   - component: {fileID: 1767251536}
   - component: {fileID: 1767251537}
   m_Layer: 5
-  m_Name: UI_MergeSlot (2)
+  m_Name: '[Image] MergeSlot 2'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3401,7 +3401,7 @@ GameObject:
   - component: {fileID: 1845676930}
   - component: {fileID: 1845676929}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: '[Text] Inventory'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3538,7 +3538,7 @@ GameObject:
   - component: {fileID: 1939777122}
   - component: {fileID: 1939777121}
   m_Layer: 5
-  m_Name: UI_Image_Merge (2)
+  m_Name: '[Image] Merge 2'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3611,7 +3611,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2073828596}
   m_Layer: 5
-  m_Name: UI_Image_MergeResult
+  m_Name: '[Icon] MergeResult'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3651,7 +3651,7 @@ GameObject:
   - component: {fileID: 2094100437}
   - component: {fileID: 2094100436}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: '[Text] Merge'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3789,7 +3789,7 @@ GameObject:
   - component: {fileID: 2105860465}
   - component: {fileID: 2105860463}
   m_Layer: 5
-  m_Name: UI_Backpack
+  m_Name: '[Panel] Backpack'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3885,7 +3885,7 @@ GameObject:
   - component: {fileID: 2110538275}
   - component: {fileID: 2110538274}
   m_Layer: 5
-  m_Name: UI_Scrollview_StorageArea
+  m_Name: '[ScrollView] StorageArea'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
