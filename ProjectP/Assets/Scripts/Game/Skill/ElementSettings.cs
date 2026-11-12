@@ -132,13 +132,14 @@ public class ElementSettings : ScriptableObject
         return SumScaledPercent(stacks, defenseReductionBase, defenseReductionPer100, defenseReductionMax);
     }
 
+    // 몬스터마다 물리 스텝, 타격마다 불리므로 인터페이스 foreach(열거자 박싱으로 매번 GC 할당) 대신 인덱스로 순회한다.
     private static int SumPercentDamage(IReadOnlyList<int> stacks, float percent)
     {
         int total = 0;
-        foreach (int elementAttack in stacks)
+        for (int i = 0; i < stacks.Count; i++)
         {
             // 10 * 0.1이 0.999...로 계산되어 0이 되지 않도록 작은 오차를 더한다.
-            total += Mathf.FloorToInt(Mathf.Max(0, elementAttack) * percent * 0.01f + 0.0001f);
+            total += Mathf.FloorToInt(Mathf.Max(0, stacks[i]) * percent * 0.01f + 0.0001f);
         }
 
         return total;
@@ -147,9 +148,9 @@ public class ElementSettings : ScriptableObject
     private static float SumScaledPercent(IReadOnlyList<int> stacks, float basePercent, float per100Percent, float maxPercent)
     {
         float total = 0f;
-        foreach (int elementAttack in stacks)
+        for (int i = 0; i < stacks.Count; i++)
         {
-            total += basePercent + per100Percent * (Mathf.Max(0, elementAttack) / AttackUnit);
+            total += basePercent + per100Percent * (Mathf.Max(0, stacks[i]) / AttackUnit);
         }
 
         return Mathf.Min(total, maxPercent) * 0.01f;

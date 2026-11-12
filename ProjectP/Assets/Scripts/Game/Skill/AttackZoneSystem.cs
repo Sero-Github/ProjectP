@@ -206,6 +206,12 @@ public class AttackZoneSystem : MonoBehaviour
     // 몬스터마다 닿은 지대 중 가장 최근 지대를 골라 타격한다.
     private void HitEnemies(float deltaTime)
     {
+        // 지대도 내부 쿨타임 기록도 없으면 타격하거나 갱신할 것이 없다. 광역 탄환, 지원이 없는 동안 매 프레임 순회하지 않게 한다.
+        if (zones.Count == 0 && contacts.Count == 0)
+        {
+            return;
+        }
+
         enemyBuffer.Clear();
         enemyBuffer.AddRange(Enemy.Actives);
 
@@ -223,7 +229,8 @@ public class AttackZoneSystem : MonoBehaviour
                 contact.Timer -= deltaTime;
             }
 
-            Zone zone = FindTopZone(enemy.transform.position, enemy.BodyRadius);
+            // 지대가 없으면 쿨타임 기록만 정리하면 되므로 콜라이더 크기(BodyRadius)를 읽지 않는다.
+            Zone zone = zones.Count > 0 ? FindTopZone(enemy.transform.position, enemy.BodyRadius) : null;
             if (zone == null)
             {
                 // 내부 쿨타임이 끝났으면 다음에 어느 지대에 들어가든 바로 맞으므로 기록을 지운다.

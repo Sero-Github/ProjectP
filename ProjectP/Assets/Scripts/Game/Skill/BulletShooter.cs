@@ -26,6 +26,25 @@ public class BulletShooter : MonoBehaviour
         public bool WaitingFirstShot { get; set; } = true;
     }
 
+    // 조준할 적 후보와 정렬 기준. 정렬 중에 바뀌지 않으므로 모을 때 한 번만 계산한다.
+    private readonly struct TargetCandidate
+    {
+        public TargetCandidate(Enemy enemy, bool targeted, float sqrDistance)
+        {
+            Enemy = enemy;
+            Targeted = targeted;
+            SqrDistance = sqrDistance;
+        }
+
+        public Enemy Enemy { get; }
+        // 이번 프레임에 다른 lane이 이미 조준한 적이면 true.
+        public bool Targeted { get; }
+        public float SqrDistance { get; }
+    }
+
+    // 메서드 그룹을 Sort에 바로 넘기면 호출마다 델리게이트가 할당되므로 한 번만 만들어 둔다.
+    private static readonly System.Comparison<TargetCandidate> CandidateComparison = CompareCandidates;
+
     // 쿨타임 감소 상한선이 정해지기 전까지, 매 프레임 발사되지 않도록 최소 쿨타임만 둡니다.
     private const float MinCooldown = 0.05f;
 
@@ -52,6 +71,7 @@ public class BulletShooter : MonoBehaviour
     [SerializeField] private Camera targetCamera;
 
     private readonly List<Enemy> targets = new List<Enemy>();
+    private readonly List<TargetCandidate> candidates = new List<TargetCandidate>();
     // 이번 프레임에 다른 lane이 이미 조준한 적. 같은 프레임에 쏘는 lane끼리는 가능하면 다른 적을 노린다.
     private readonly HashSet<Enemy> targetedThisFrame = new HashSet<Enemy>();
     // 공격 스킬 블록이 없으면 무속성 lane 하나만 있다.
@@ -292,36 +312,45 @@ public class BulletShooter : MonoBehaviour
 
     // 화면 안의 적 중 가까운 순으로 최대 count마리를 중복 없이 고릅니다.
     // 이번 프레임에 다른 lane이 이미 조준한 적은 뒤로 미뤄, 적이 충분하면 서로 다른 적을 노리고 모자라면 겹쳐 노립니다.
+    // 정렬 기준(조준 여부, 거리)은 후보마다 한 번만 계산해 두고, 비교할 때마다 transform.position과 HashSet을 읽지 않습니다.
     private void CollectTargets(int count)
     {
         targets.Clear();
+        candidates.Clear();
 
         Vector2 origin = transform.position;
-        foreach (Enemy enemy in Enemy.Actives)
+        // 인터페이스 foreach는 열거자 박싱으로 매번 GC 할당이 생기므로 인덱스로 순회한다.
+        IReadOnlyList<Enemy> enemies = Enemy.Actives;
+        for (int i = 0; i < enemies.Count; i++)
         {
-            if (IsOnScreen(enemy.transform.position))
+            Enemy enemy = enemies[i];
+            Vector3 position = enemy.transform.position;
+            if (IsOnScreen(position))
             {
-                targets.Add(enemy);
+                candidates.Add(new TargetCandidate(enemy, targetedThisFrame.Contains(enemy), ((Vector2)position - origin).sqrMagnitude));
             }
         }
 
-        targets.Sort((a, b) =>
-        {
-            bool aTargeted = targetedThisFrame.Contains(a);
-            bool bTargeted = targetedThisFrame.Contains(b);
-            if (aTargeted != bTargeted)
-            {
-                return aTargeted ? 1 : -1;
-            }
+        candidates.Sort(CandidateComparison);
 
-            return ((Vector2)a.transform.position - origin).sqrMagnitude
-                .CompareTo(((Vector2)b.transform.position - origin).sqrMagnitude);
-        });
-
-        if (targets.Count > count)
+        int taken = Mathf.Min(count, candidates.Count);
+        for (int i = 0; i < taken; i++)
         {
-            targets.RemoveRange(count, targets.Count - count);
+            targets.Add(candidates[i].Enemy);
         }
+
+        candidates.Clear();
+    }
+
+    // 조준하지 않은 적이 먼저, 같으면 가까운 적이 먼저다.
+    private static int CompareCandidates(TargetCandidate a, TargetCandidate b)
+    {
+        if (a.Targeted != b.Targeted)
+        {
+            return a.Targeted ? 1 : -1;
+        }
+
+        return a.SqrDistance.CompareTo(b.SqrDistance);
     }
 
     private bool IsOnScreen(Vector3 position)

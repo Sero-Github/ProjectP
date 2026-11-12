@@ -193,15 +193,24 @@ public class SupportShooter : MonoBehaviour
         Enemy best = null;
         bool bestTargeted = true;
         float bestDistance = float.PositiveInfinity;
-        foreach (Enemy enemy in Enemy.Actives)
+        // 대상이 없으면 매 프레임 불리므로 인터페이스 foreach(열거자 박싱으로 GC 할당) 대신 인덱스로 순회한다.
+        IReadOnlyList<Enemy> enemies = Enemy.Actives;
+        for (int i = 0; i < enemies.Count; i++)
         {
-            if (enemy.IsDead || !IsOnScreen(enemy.transform.position))
+            Enemy enemy = enemies[i];
+            if (enemy.IsDead)
+            {
+                continue;
+            }
+
+            Vector3 position = enemy.transform.position;
+            if (!IsOnScreen(position))
             {
                 continue;
             }
 
             bool targeted = IsTargeted(lane, enemy);
-            float distance = ((Vector2)enemy.transform.position - origin).sqrMagnitude;
+            float distance = ((Vector2)position - origin).sqrMagnitude;
             if (best == null || (bestTargeted && !targeted) || (bestTargeted == targeted && distance < bestDistance))
             {
                 best = enemy;
