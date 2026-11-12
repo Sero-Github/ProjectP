@@ -14,10 +14,11 @@ public class EnemySpawner : MonoBehaviour
 
     // 사망 처리 등에서 Enemy.Actives를 순회하며 몬스터를 없앨 때 쓰는 복사본.
     private readonly List<Enemy> despawnTargets = new List<Enemy>();
-    // 유형별 몬스터 풀. 사망한 몬스터는 비활성화되어 여기로 돌아오고, 다음 생성 때 재사용된다.
-    private readonly Dictionary<EnemyType, ObjectPool<Enemy>> poolByType = new Dictionary<EnemyType, ObjectPool<Enemy>>();
+    // 몬스터 목록 순서의 유형별 풀. 사망한 몬스터는 비활성화되어 여기로 돌아오고, 다음 생성 때 재사용된다.
+    private ObjectPool<Enemy>[] pools = Array.Empty<ObjectPool<Enemy>>();
 
-    private List<EnemyType> sequence;
+    // 몬스터 목록 인덱스로 된 이번 라운드의 소환 순서
+    private List<int> sequence;
     private int nextIndex;
     private float interval;
     private float timer;
@@ -27,6 +28,8 @@ public class EnemySpawner : MonoBehaviour
     public bool IsSpawning => sequence != null && nextIndex < sequence.Count;
     public int SpawnedCount => nextIndex;
     public int TotalCount => sequence != null ? sequence.Count : 0;
+    // 소환할 몬스터 종류. 스테이지 CSV의 몬스터 열과 소환 순서의 인덱스가 이 목록을 따른다.
+    public IReadOnlyList<EnemyDefinition> Enemies => settings != null ? settings.Enemies : Array.Empty<EnemyDefinition>();
 
     // 이번 라운드의 마지막 몬스터를 소환했을 때 발생합니다.
     public event Action SpawnFinished;
@@ -49,20 +52,17 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
 
-        foreach (EnemySpawnSettings.EnemyEntry entry in settings.Enemies)
+        IReadOnlyList<EnemyDefinition> enemies = settings.Enemies;
+        pools = new ObjectPool<Enemy>[enemies.Count];
+        for (int i = 0; i < enemies.Count; i++)
         {
-            if (entry == null || entry.Prefab == null)
+            if (enemies[i] == null || enemies[i].Prefab == null)
             {
+                Debug.LogWarning($"{name}: 몬스터 목록 {i + 1}번째 항목({enemies[i]?.Id})에 프리팹이 연결되지 않았습니다.", settings);
                 continue;
             }
 
-            if (poolByType.ContainsKey(entry.Type))
-            {
-                Debug.LogWarning($"{name}: {entry.Type} 프리팹이 중복 연결되어 처음 것만 사용합니다.", settings);
-                continue;
-            }
-
-            poolByType.Add(entry.Type, CreatePool(entry.Prefab));
+            pools[i] = CreatePool(enemies[i].Prefab);
         }
     }
 
@@ -92,9 +92,9 @@ public class EnemySpawner : MonoBehaviour
     }
 
     // 소환 순서 전체를 duration초 동안 같은 간격(duration / 개수)으로 소환한다. 첫 몬스터는 첫 간격이 지난 뒤 나온다.
-    public void StartRound(List<EnemyType> spawnSequence, float duration, int roundLevel)
+    public void StartRound(List<int> spawnSequence, float duration, int roundLevel)
     {
-        sequence = spawnSequence ?? new List<EnemyType>();
+        sequence = spawnSequence ?? new List<int>();
         nextIndex = 0;
         timer = 0f;
         level = Mathf.Max(1, roundLevel);
@@ -152,16 +152,19 @@ public class EnemySpawner : MonoBehaviour
         }
     }
 
-    public Enemy Spawn(EnemyType type)
+    // enemyIndex는 몬스터 목록(Enemies)의 인덱스이다.
+    public Enemy Spawn(int enemyIndex)
     {
         if (targetCamera == null)
         {
             return null;
         }
 
-        if (!poolByType.TryGetValue(type, out ObjectPool<Enemy> pool))
+        ObjectPool<Enemy> pool = enemyIndex >= 0 && enemyIndex < pools.Length ? pools[enemyIndex] : null;
+        if (pool == null)
         {
-            Debug.LogError($"{name}: {type} 프리팹이 연결되지 않아 소환하지 못했습니다.", this);
+            string id = enemyIndex >= 0 && enemyIndex < Enemies.Count ? Enemies[enemyIndex]?.Id : enemyIndex.ToString();
+            Debug.LogError($"{name}: {id} 프리팹이 연결되지 않아 소환하지 못했습니다.", this);
             return null;
         }
 

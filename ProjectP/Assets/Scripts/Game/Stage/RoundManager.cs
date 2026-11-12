@@ -87,7 +87,7 @@ public class RoundManager : MonoBehaviour
             return;
         }
 
-        table = StageTable.Parse(settings.StageCsv);
+        table = StageTable.Parse(settings.StageCsv, spawner.Enemies);
         if (table.IsEmpty)
         {
             enabled = false;
@@ -147,7 +147,7 @@ public class RoundManager : MonoBehaviour
             Player.Instance.Revive();
         }
 
-        spawner.StartRound(SpawnSequence.Build(data.Counts), settings.RoundDuration, Level);
+        spawner.StartRound(SpawnSequence.Build(data.Counts, spawner.Enemies), settings.RoundDuration, Level);
         state = State.Playing;
         RoundStarted?.Invoke(CurrentStage, CurrentRound);
     }

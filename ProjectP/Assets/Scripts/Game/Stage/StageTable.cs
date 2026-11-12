@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
@@ -7,7 +8,7 @@ public class RoundSpawnData
 {
     public int Stage { get; }
     public int Round { get; }
-    // EnemyType 순서의 유형별 개수
+    // 몬스터 목록(EnemySpawnSettings) 순서의 유형별 개수
     public IReadOnlyList<int> Counts { get; }
     public int Total { get; }
 
@@ -26,18 +27,20 @@ public class RoundSpawnData
         Total = total;
     }
 
-    public int GetCount(EnemyType type) => Counts[(int)type];
+    public int GetCount(int enemyIndex) => enemyIndex >= 0 && enemyIndex < Counts.Count ? Counts[enemyIndex] : 0;
 }
 
-// 스테이지 CSV(스테이지, 라운드, 원형, 삼각형, 사각형, 오각형)를 읽은 표. 🏰 스테이지 문서 2. 스테이지 구성을 따른다.
-// 첫 줄은 머리글로 건너뛰고, 빈 줄과 #으로 시작하는 줄은 무시한다.
+// 스테이지 CSV를 읽은 표. 🏰 스테이지 문서 2. 스테이지 구성을 따른다.
+// 첫 줄은 머리글이다. 앞의 두 열은 스테이지, 라운드이고, 그 뒤의 열은 머리글 이름으로 몬스터 목록의 id와 연결한다.
+// (예: Stage,Round,Circle,Triangle,Square,Pentagon) 열 순서는 몬스터 목록 순서와 달라도 된다.
+// 빈 줄과 #으로 시작하는 줄은 무시한다.
 public class StageTable
 {
     public const int RoundsPerStage = 10;
-    // 👿 몬스터 문서 2. 공통: 한 스테이지의 오각형 몬스터는 최대 5개
-    public const int MaxPentagonsPerStage = 5;
 
-    private const int ColumnCount = 2 + EnemyTypes.Count;
+    private const int StageColumn = 0;
+    private const int RoundColumn = 1;
+    private const int FirstEnemyColumn = 2;
 
     // 스테이지 -> 라운드 -> 데이터. 스테이지와 라운드는 오름차순으로 정렬해 둔다.
     private readonly SortedDictionary<int, SortedDictionary<int, RoundSpawnData>> stages =
@@ -45,6 +48,11 @@ public class StageTable
 
     private readonly List<string> errors = new List<string>();
     private readonly List<string> warnings = new List<string>();
+
+    private IReadOnlyList<EnemyDefinition> enemies = Array.Empty<EnemyDefinition>();
+    // 몬스터 인덱스 -> CSV 열 인덱스. 머리글에 열이 없으면 -1이다.
+    private int[] enemyColumns = Array.Empty<int>();
+    private int columnCount;
 
     public bool IsEmpty => stages.Count == 0;
     // 읽지 못한 줄 등 데이터 오류. Parse(TextAsset)은 이를 콘솔에 남긴다.
@@ -54,7 +62,8 @@ public class StageTable
     public int FirstStage { get; private set; }
     public int LastStage { get; private set; }
 
-    public static StageTable Parse(TextAsset csv)
+    // enemies는 EnemySpawnSettings의 몬스터 목록. RoundSpawnData.Counts는 이 순서를 따른다.
+    public static StageTable Parse(TextAsset csv, IReadOnlyList<EnemyDefinition> enemies)
     {
         if (csv == null)
         {
@@ -62,7 +71,7 @@ public class StageTable
             return new StageTable();
         }
 
-        StageTable table = Parse(csv.text, csv.name);
+        StageTable table = Parse(csv.text, enemies, csv.name);
         foreach (string error in table.errors)
         {
             Debug.LogError(error, csv);
@@ -77,12 +86,17 @@ public class StageTable
     }
 
     // 콘솔에 로그를 남기지 않고 Errors, Warnings에 모은다.
-    public static StageTable Parse(string text, string sourceName = "StageTable")
+    public static StageTable Parse(string text, IReadOnlyList<EnemyDefinition> enemies, string sourceName = "StageTable")
     {
         var table = new StageTable();
         string[] lines = (text ?? string.Empty).Split('\n');
 
         // 0번 줄은 머리글
+        if (!table.ReadHeader(lines[0].Trim(), enemies, sourceName))
+        {
+            return table;
+        }
+
         for (int i = 1; i < lines.Length; i++)
         {
             string line = lines[i].Trim();
@@ -91,7 +105,7 @@ public class StageTable
                 continue;
             }
 
-            if (!TryParseLine(line, out RoundSpawnData data, out string error))
+            if (!table.TryParseLine(line, out RoundSpawnData data, out string error))
             {
                 table.errors.Add($"{sourceName} {i + 1}번째 줄: {error} ({line})");
                 continue;
@@ -104,47 +118,157 @@ public class StageTable
         return table;
     }
 
-    private static bool TryParseLine(string line, out RoundSpawnData data, out string error)
+    // 머리글의 몬스터 열을 몬스터 목록의 id와 연결한다. 읽을 수 없으면 false이다.
+    private bool ReadHeader(string header, IReadOnlyList<EnemyDefinition> definitions, string sourceName)
     {
-        data = null;
-        string[] cells = line.Split(',');
-        if (cells.Length < ColumnCount)
+        if (definitions == null || definitions.Count == 0)
         {
-            error = $"열이 {ColumnCount}개 필요합니다.";
+            errors.Add($"{sourceName}: 몬스터 목록이 비어 있습니다. EnemySpawnSettings를 확인하세요.");
             return false;
         }
 
-        var values = new int[ColumnCount];
-        for (int c = 0; c < ColumnCount; c++)
+        string[] cells = header.Split(',');
+        if (cells.Length <= FirstEnemyColumn)
         {
-            if (!int.TryParse(cells[c].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out values[c]))
+            errors.Add($"{sourceName}: 머리글에 스테이지, 라운드와 몬스터 열이 필요합니다. ({header})");
+            return false;
+        }
+
+        enemies = definitions;
+        columnCount = cells.Length;
+        enemyColumns = new int[definitions.Count];
+        var invalidIds = new bool[definitions.Count];
+        for (int i = 0; i < definitions.Count; i++)
+        {
+            enemyColumns[i] = -1;
+            string id = GetId(i);
+            if (id.Length == 0)
             {
-                error = $"{c + 1}번째 열이 정수가 아닙니다.";
-                return false;
+                errors.Add($"{sourceName}: 몬스터 목록 {i + 1}번째 항목의 id가 비어 있습니다.");
+                invalidIds[i] = true;
+            }
+            else if (FindEnemy(id) != i)
+            {
+                errors.Add($"{sourceName}: 몬스터 목록에 {id}가 중복되어 처음 항목만 사용합니다.");
+                invalidIds[i] = true;
             }
         }
 
-        if (values[0] < 1 || values[1] < 1)
+        for (int c = FirstEnemyColumn; c < cells.Length; c++)
+        {
+            string name = cells[c].Trim();
+            if (name.Length == 0)
+            {
+                continue;
+            }
+
+            int index = FindEnemy(name);
+            if (index < 0)
+            {
+                errors.Add($"{sourceName}: 머리글의 {name} 열이 몬스터 목록에 없어 무시합니다.");
+            }
+            else if (enemyColumns[index] >= 0)
+            {
+                errors.Add($"{sourceName}: 머리글에 {name} 열이 중복되어 처음 열만 사용합니다.");
+            }
+            else
+            {
+                enemyColumns[index] = c;
+            }
+        }
+
+        for (int i = 0; i < definitions.Count; i++)
+        {
+            if (!invalidIds[i] && enemyColumns[i] < 0)
+            {
+                warnings.Add($"{sourceName}: 머리글에 {GetId(i)} 열이 없어 0마리로 처리합니다.");
+            }
+        }
+
+        return true;
+    }
+
+    private string GetId(int enemyIndex)
+    {
+        return enemies[enemyIndex]?.Id?.Trim() ?? string.Empty;
+    }
+
+    // id가 같은 첫 몬스터의 인덱스. 대소문자는 구분하지 않으며, 없으면 -1이다.
+    private int FindEnemy(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            if (string.Equals(GetId(i), id, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private bool TryParseLine(string line, out RoundSpawnData data, out string error)
+    {
+        data = null;
+        string[] cells = line.Split(',');
+        if (cells.Length < columnCount)
+        {
+            error = $"열이 {columnCount}개 필요합니다.";
+            return false;
+        }
+
+        if (!TryParseCell(cells, StageColumn, out int stage, out error) || !TryParseCell(cells, RoundColumn, out int round, out error))
+        {
+            return false;
+        }
+
+        if (stage < 1 || round < 1)
         {
             error = "스테이지와 라운드는 1 이상이어야 합니다.";
             return false;
         }
 
-        var counts = new int[EnemyTypes.Count];
-        for (int t = 0; t < EnemyTypes.Count; t++)
+        var counts = new int[enemies.Count];
+        for (int i = 0; i < enemies.Count; i++)
         {
-            if (values[2 + t] < 0)
+            int column = enemyColumns[i];
+            if (column < 0)
+            {
+                continue;
+            }
+
+            if (!TryParseCell(cells, column, out counts[i], out error))
+            {
+                return false;
+            }
+
+            if (counts[i] < 0)
             {
                 error = "몬스터 수는 음수일 수 없습니다.";
                 return false;
             }
-
-            counts[t] = values[2 + t];
         }
 
         error = null;
-        data = new RoundSpawnData(values[0], values[1], counts);
+        data = new RoundSpawnData(stage, round, counts);
         return true;
+    }
+
+    private static bool TryParseCell(string[] cells, int column, out int value, out string error)
+    {
+        if (int.TryParse(cells[column].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
+        {
+            error = null;
+            return true;
+        }
+
+        error = $"{column + 1}번째 열이 정수가 아닙니다.";
+        return false;
     }
 
     private void Add(RoundSpawnData data, string sourceName, int lineNumber)
@@ -182,7 +306,7 @@ public class StageTable
 
             LastStage = stage.Key;
 
-            int pentagons = 0;
+            var stageCounts = new int[enemies.Count];
             int expectedRound = 1;
             foreach (RoundSpawnData data in stage.Value.Values)
             {
@@ -192,7 +316,10 @@ public class StageTable
                 }
 
                 expectedRound = data.Round + 1;
-                pentagons += data.GetCount(EnemyType.Pentagon);
+                for (int i = 0; i < enemies.Count; i++)
+                {
+                    stageCounts[i] += data.GetCount(i);
+                }
 
                 if (data.Total == 0)
                 {
@@ -200,9 +327,14 @@ public class StageTable
                 }
             }
 
-            if (pentagons > MaxPentagonsPerStage)
+            // 👿 몬스터 문서 2. 공통: 한 스테이지의 오각형 몬스터는 최대 5개 (EnemyDefinition.MaxPerStage)
+            for (int i = 0; i < enemies.Count; i++)
             {
-                warnings.Add($"{sourceName}: {stage.Key}스테이지의 오각형 몬스터가 {pentagons}개로 최대 {MaxPentagonsPerStage}개를 넘습니다.");
+                int max = enemies[i] != null ? enemies[i].MaxPerStage : 0;
+                if (max > 0 && stageCounts[i] > max)
+                {
+                    warnings.Add($"{sourceName}: {stage.Key}스테이지의 {GetId(i)} 몬스터가 {stageCounts[i]}개로 최대 {max}개를 넘습니다.");
+                }
             }
 
             int lastRound = GetLastRound(stage.Key);

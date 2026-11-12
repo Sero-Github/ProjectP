@@ -13,12 +13,20 @@ MonoBehaviour:
   m_Name: EnemySpawnSettings
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnSettings
   enemies:
-  - type: 0
+  - id: Circle
     prefab: {fileID: 4679457134162857850, guid: fad2f8ca5fd507d4ab68fa683d1a858e, type: 3}
-  - type: 1
+    spawnLastOne: 0
+    maxPerStage: 0
+  - id: Triangle
     prefab: {fileID: 4679457134162857850, guid: 908b096bddd6dc849a00901074e2d290, type: 3}
-  - type: 2
+    spawnLastOne: 0
+    maxPerStage: 0
+  - id: Square
     prefab: {fileID: 4679457134162857850, guid: e8f882344592b2c4f8b367f1bc689c34, type: 3}
-  - type: 3
+    spawnLastOne: 0
+    maxPerStage: 0
+  - id: Pentagon
     prefab: {fileID: 4679457134162857850, guid: 11eb08e60f294a84c8de5dd9757abca4, type: 3}
+    spawnLastOne: 1
+    maxPerStage: 5
   spawnMargin: 1
