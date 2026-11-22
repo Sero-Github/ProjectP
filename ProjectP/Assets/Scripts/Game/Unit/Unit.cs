@@ -21,10 +21,13 @@ public abstract class Unit : MonoBehaviour
         CurrentHp = stats.MaxHp;
     }
 
-    // 방어력을 적용해 실제로 깎인 체력을 돌려준다. 이미 죽었거나 방어력에 모두 막히면 0이다.
+    // 무적인 동안에는 대미지를 받지 않는다. 피격 후 무적 시간이 있는 개체는 재정의한다.
+    protected virtual bool IsInvulnerable => false;
+
+    // 방어력을 적용해 실제로 깎인 체력을 돌려준다. 이미 죽었거나, 무적이거나, 방어력에 모두 막히면 0이다.
     public int TakeDamage(int damage)
     {
-        if (IsDead)
+        if (IsDead || IsInvulnerable)
         {
             return 0;
         }

@@ -201,7 +201,8 @@ public class Enemy : Unit
                 Player target = contactTarget;
                 contactTimer = data.ContactInterval / AttackSpeedMultiplier;
 
-                // 대미지를 주면 살짝 밀려난다. 방어력에 모두 막혀 대미지가 0이면 밀려나지 않는다.
+                // 대미지를 주면 살짝 밀려난다. 플레이어가 무적이거나 방어력에 모두 막혀 대미지가 0이면 밀려나지 않는다.
+                // 막힌 공격도 쿨타임은 소모한다. 무적 중에 닿은 몬스터는 ContactInterval 뒤에 다시 때린다.
                 // 이 대미지로 플레이어가 죽으면 모든 몬스터가 풀로 돌아가므로(비활성) 넉백하지 않는다.
                 if (target.TakeDamage(Attack) > 0 && gameObject.activeSelf)
                 {

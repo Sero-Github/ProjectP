@@ -10,7 +10,11 @@ public class Player : Unit
     public static event Action Died;
 
     [Header("피격")]
-    [Tooltip("피격 후 깜빡이는 시간(초). 깜빡이는 동안에도 대미지는 받습니다.")]
+    [Tooltip("피격 후 대미지를 받지 않는 시간(초)")]
+    [Min(0f)]
+    [SerializeField] private float invulnerableDuration = 0.3f;
+
+    [Tooltip("피격 후 깜빡이는 시간(초). 무적 시간과 별개이며, 무적 시간이 끝나면 깜빡이는 중에도 대미지를 받습니다.")]
     [Min(0f)]
     [SerializeField] private float blinkDuration = 2f;
 
@@ -36,9 +40,13 @@ public class Player : Unit
     private SpriteRenderer spriteRenderer;
     private Collider2D bodyCollider;
     private float blinkTimer;
+    // 이 시각(Time.time)까지 무적이다. 깜빡임 타이머와 묶지 않도록 Update에서 줄이지 않고 시각으로 비교한다.
+    private float invulnerableUntil;
 
     public float ContactKnockbackDistance => contactKnockbackDistance;
     public float ContactKnockbackDuration => contactKnockbackDuration;
+
+    protected override bool IsInvulnerable => Time.time < invulnerableUntil;
 
     protected override void Awake()
     {
@@ -118,6 +126,7 @@ public class Player : Unit
     // 라운드를 시작할 때마다 체력을 가득 채운다. 사망해 사라진 상태라면 다시 나타난다.
     public void Revive()
     {
+        invulnerableUntil = 0f;
         EndBlink();
         SetVisible(true);
         RestoreFullHp();
@@ -126,6 +135,9 @@ public class Player : Unit
     protected override void OnDamaged(int applied)
     {
         Debug.Log($"Player hit: -{applied} HP {CurrentHp} / {MaxHp}");
+
+        // 피격하면 무적 시간을 건다. 무적 중에는 TakeDamage가 0을 돌려주어 여기로 오지 않으므로 무적 시간이 늘어나지 않는다.
+        invulnerableUntil = Time.time + invulnerableDuration;
 
         // 피격할 때마다 깜빡임을 처음부터 다시 시작한다. 이 피격으로 죽었다면 깜빡이지 않고 바로 사망 처리한다.
         if (!IsDead && blinkDuration > 0f)
@@ -152,7 +164,7 @@ public class Player : Unit
         SetAlpha(1f);
     }
 
-    // 사라진 동안에는 몬스터 탄환, 몬스터와 부딪히지 않도록 콜라이더도 끈다.
+    // 사라진 동안에는 몬스터와 부딪히지 않도록 콜라이더도 끈다.
     private void SetVisible(bool visible)
     {
         if (spriteRenderer != null)
