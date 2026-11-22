@@ -42,15 +42,6 @@ public class EnemyData : ScriptableObject
     [Min(0.05f)]
     [SerializeField] private float contactInterval = 1f;
 
-    [Header("골드")]
-    [Tooltip("고정 골드")]
-    [Min(0f)]
-    [SerializeField] private float baseGold = 0f;
-
-    [Tooltip("골드 배율. 레벨마다 이 값만큼 골드가 늘어납니다.")]
-    [Min(0f)]
-    [SerializeField] private float goldMultiplier = 0f;
-
     public float MoveSpeed => moveSpeed;
     public float ContactInterval => contactInterval;
 
@@ -62,11 +53,6 @@ public class EnemyData : ScriptableObject
     public int GetAttack(int level)
     {
         return Evaluate(baseAttack, attackMultiplier, level);
-    }
-
-    public int GetGold(int level)
-    {
-        return Evaluate(baseGold, goldMultiplier, level);
     }
 
     // 소수점 이하는 버린다. 2.1 * 10이 20.999...로 계산되어 20이 되지 않도록 작은 오차를 더한다.

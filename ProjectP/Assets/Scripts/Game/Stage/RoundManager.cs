@@ -154,7 +154,7 @@ public class RoundManager : MonoBehaviour
 
     private void OnPlayerDied()
     {
-        // 전환 중에 남은 탄환 등에 맞아 죽은 것은 무시한다. 다음 라운드 시작 때 되살아난다.
+        // 전환 중에 남은 몬스터에 닿아 죽은 것은 무시한다. 다음 라운드 시작 때 되살아난다.
         if (state != State.Playing)
         {
             return;
@@ -163,7 +163,6 @@ public class RoundManager : MonoBehaviour
         spawner.StopSpawning();
         // 몬스터가 모두 죽는 파티클 (🏰 스테이지 5)
         spawner.DespawnAll(true);
-        EnemyBullet.DespawnAll();
         EndRound(false);
     }
 
@@ -175,7 +174,6 @@ public class RoundManager : MonoBehaviour
 
         if (victory)
         {
-            EnemyBullet.DespawnAll();
             CheckBossFirstClear(endedStage, endedRound);
             MoveToNextRound();
         }

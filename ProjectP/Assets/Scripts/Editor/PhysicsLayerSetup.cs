@@ -2,18 +2,16 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// 플레이어, 몬스터, 탄환, 몬스터 탄환을 각자의 물리 레이어로 나누고, 실제로 처리하는 조합만 서로 닿게 한다.
+// 플레이어, 몬스터, 탄환을 각자의 물리 레이어로 나누고, 실제로 처리하는 조합만 서로 닿게 한다.
 // 탄환끼리처럼 코드가 무시하는 조합까지 트리거 판정과 OnTriggerEnter2D 호출이 일어나지 않게 하는 최적화이며 동작은 같다.
 // - 몬스터 ↔ 플레이어: 근접 공격 (Enemy)
 // - 몬스터 ↔ 탄환: 탄환 타격 (Bullet)
-// - 몬스터 탄환 ↔ 플레이어: 원거리 공격 (EnemyBullet)
 // 여러 번 실행해도 결과는 같다. 실행 후 열린 씬(플레이어 레이어)을 저장해야 한다.
 public static class PhysicsLayerSetup
 {
     public const string PlayerLayer = "Player";
     public const string EnemyLayer = "Enemy";
     public const string PlayerBulletLayer = "PlayerBullet";
-    public const string EnemyBulletLayer = "EnemyBullet";
 
     // 0~7번은 Unity 기본 레이어 자리이므로 사용자 레이어는 8번부터 쓴다.
     private const int FirstUserLayer = 8;
@@ -25,19 +23,17 @@ public static class PhysicsLayerSetup
         int player = EnsureLayer(PlayerLayer);
         int enemy = EnsureLayer(EnemyLayer);
         int playerBullet = EnsureLayer(PlayerBulletLayer);
-        int enemyBullet = EnsureLayer(EnemyBulletLayer);
-        if (player < 0 || enemy < 0 || playerBullet < 0 || enemyBullet < 0)
+        if (player < 0 || enemy < 0 || playerBullet < 0)
         {
             Debug.LogError("빈 사용자 레이어가 부족해 물리 레이어를 설정하지 못했습니다.");
             return;
         }
 
-        ApplyCollisionMatrix(player, enemy, playerBullet, enemyBullet);
+        ApplyCollisionMatrix(player, enemy, playerBullet);
 
         int prefabCount = 0;
         prefabCount += SetPrefabLayers<Enemy>(enemy);
         prefabCount += SetPrefabLayers<Bullet>(playerBullet);
-        prefabCount += SetPrefabLayers<EnemyBullet>(enemyBullet);
         int playerCount = SetScenePlayerLayers(player);
 
         AssetDatabase.SaveAssets();
@@ -71,10 +67,10 @@ public static class PhysicsLayerSetup
         return -1;
     }
 
-    // 네 레이어끼리의 조합만 정한다. 다른 레이어(Default 등)와의 설정은 건드리지 않는다.
-    private static void ApplyCollisionMatrix(int player, int enemy, int playerBullet, int enemyBullet)
+    // 세 레이어끼리의 조합만 정한다. 다른 레이어(Default 등)와의 설정은 건드리지 않는다.
+    private static void ApplyCollisionMatrix(int player, int enemy, int playerBullet)
     {
-        int[] layers = { player, enemy, playerBullet, enemyBullet };
+        int[] layers = { player, enemy, playerBullet };
         foreach (int a in layers)
         {
             foreach (int b in layers)
@@ -90,8 +86,7 @@ public static class PhysicsLayerSetup
         bool ShouldCollide(int a, int b)
         {
             return IsPair(a, b, enemy, player)
-                || IsPair(a, b, enemy, playerBullet)
-                || IsPair(a, b, enemyBullet, player);
+                || IsPair(a, b, enemy, playerBullet);
         }
 
         static bool IsPair(int a, int b, int x, int y)

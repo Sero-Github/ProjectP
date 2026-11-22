@@ -39,7 +39,6 @@ public class Enemy : Unit
     public EnemyData Data => data;
     public int Level { get; private set; }
     public int Attack { get; private set; }
-    public int Gold { get; private set; }
     // 속성 주입 상태. ElementSettings가 연결되지 않았으면 null이다.
     public EnemyElementStatus ElementStatus => elementStatus;
     // 노랑(감전) 속성으로 공격 속도가 느려진 배율. 공격 간격을 이 값으로 나눈다.
@@ -111,7 +110,6 @@ public class Enemy : Unit
         Level = Mathf.Max(1, level);
         SetStats(data.CreateStats(Level));
         Attack = data.GetAttack(Level);
-        Gold = data.GetGold(Level);
 
         elementStatus?.Reset();
         if (spriteRenderer != null)

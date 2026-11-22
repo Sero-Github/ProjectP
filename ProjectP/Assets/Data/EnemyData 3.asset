@@ -20,5 +20,3 @@ MonoBehaviour:
   defenseMultiplier: 0
   moveSpeed: 0.6
   contactInterval: 1
-  baseGold: 0
-  goldMultiplier: 0

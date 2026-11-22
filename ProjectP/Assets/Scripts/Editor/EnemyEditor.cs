@@ -31,7 +31,6 @@ public class EnemyEditor : Editor
             EditorGUILayout.IntField("방어력", enemy.Stats.Defense);
             EditorGUILayout.IntField("회복 증가(%)", enemy.Stats.HealIncrease);
             EditorGUILayout.IntField("공격력", enemy.Attack);
-            EditorGUILayout.IntField("골드", enemy.Gold);
             if (enemy.Data != null)
             {
                 EditorGUILayout.FloatField("이동 속도", enemy.Data.MoveSpeed);
