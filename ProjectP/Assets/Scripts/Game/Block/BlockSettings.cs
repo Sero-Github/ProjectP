@@ -23,11 +23,27 @@ public class BlockSettings : ScriptableObject
     [Min(1)]
     [SerializeField] private int dropGrade = 1;
 
+    [Header("블록 점수")]
+    [Tooltip("블록 한 칸당 점수. 원본 블록 점수 = 칸 수 × 이 값")]
+    [Min(0)]
+    [SerializeField] private int scorePerCell = 5;
+
+    [Tooltip("블록 하나를 병합할 수 있는 최대 횟수(합)")]
+    [Min(0)]
+    [SerializeField] private int maxMergeCount = 3;
+
+    [Tooltip("1강마다 원본 점수(3합 0강)에 더해지는 비율(%)")]
+    [Min(0)]
+    [SerializeField] private int enhanceRatePercent = 20;
+
     public IReadOnlyList<Block> BlockPrefabs => blockPrefabs;
     public GameObject BlockPiecePrefab => blockPiecePrefab;
     public int CoreCount => coreColors.Count;
     public BlockStatData StatData => statData;
     public int DropGrade => dropGrade;
+    public int ScorePerCell => scorePerCell;
+    public int MaxMergeCount => maxMergeCount;
+    public int EnhanceRatePercent => enhanceRatePercent;
 
     // 블록 번호(1부터)에 맞는 프리팹. 없으면 null이다.
     public Block GetBlockPrefab(int blockId)

@@ -12,6 +12,9 @@ public class BlockManager : MonoBehaviour
     // 속성 블록에 무작위로 부여할 스킬 종류. None은 제외한다.
     private static readonly SkillType[] SkillTypes = Array.FindAll((SkillType[])Enum.GetValues(typeof(SkillType)), type => type != SkillType.None);
 
+    // 연결되지 않았으면 null이다.
+    public BlockSettings Settings => settings;
+
     private void Awake()
     {
         Instance = this;
