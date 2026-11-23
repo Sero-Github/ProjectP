@@ -3,21 +3,29 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+// 모든 블록(스탯, 스킬, 액티브)이 공통으로 가지는 정보와 동작. 🧱 블록 문서 2장을 따른다.
+// 종류마다 다른 정보와 규칙은 StatBlock, SkillBlock, ActiveSkillBlock이 가진다.
+// 프리팹에는 붙이지 않으며, BlockManager가 빈 오브젝트에 종류에 맞는 클래스를 붙이고 Build로 조각을 조립한다.
+public abstract class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    // 블록 프리팹에서 조각 한 칸의 크기. 그리드마다 다른 칸 크기는 표시 배율로 맞춘다.
+    // 병합 조건 중 블록 종류에 따라 다른 조건이 맞지 않는 이유. 메시지 문구는 MergeResultSlot이 가진다.
+    public enum MergeMismatch
+    {
+        None,               // 병합할 수 있다
+        DifferentKind,      // 블록 종류(스탯, 스킬, 액티브)가 다르다
+        DifferentStat,      // 스탯 블록끼리 스탯이 다르다
+        DifferentElement,   // 스킬 블록끼리 속성이 다르다
+        DifferentSkill,     // 스킬 블록끼리 스킬이 다르다
+        NotMergeable,       // 병합할 수 없는 종류이다
+    }
+
+    // 조각 한 칸의 크기. 그리드마다 다른 칸 크기는 표시 배율로 맞춘다.
     public const float PieceUnit = 50f;
 
     // 블록 종류 번호. 🧱 블록 문서의 블록 종류 순서를 따르며, 병합 블록은 0이다.
     private int blockId;
-    // 0이면 스탯 블록, 1 이상이면 같은 번호의 Element 속성 블록이다.
-    [SerializeField] private int core;
     // 이 블록이 병합된 횟수(합). 0이면 원본 블록이다. 최대 합은 BlockSettings의 maxMergeCount이다.
     [SerializeField, Min(0)] private int mergeCount;
-    // 스탯 블록(core 0)만 사용한다.
-    [SerializeField] private BlockStat stat;
-    // 속성 블록(core 1~7)만 사용한다. 스킬 점수는 따로 두지 않고 블록 점수(score)를 쓴다.
-    [SerializeField] private SkillType skill;
     // 강화하지 않은(0강) 원본 점수. 🧱 블록 강화 4장의 "원본 점수(3합 0강)"이다.
     // 드롭 블록은 칸 수 × 칸당 점수이고, 병합하면 두 블록의 원본 점수를 더한다.
     [SerializeField, Min(0)] private int baseScore;
@@ -42,16 +50,9 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
 
     public RectTransform RectTransform => rectTransform;
     public int BlockId => blockId;
-    public int Core => core;
-    public BlockStat Stat => stat;
-    public bool HasStat => core == 0;
-    public SkillType Skill => skill;
     public int BaseScore => baseScore;
     public int EnhanceLevel => enhanceLevel;
     public int Score => score;
-    public bool HasSkill => core != 0;
-    // 속성 블록(core 1~7)의 속성. 스탯 블록은 None이다.
-    public Element Element => (Element)core;
     public int PieceCount => pieces != null ? pieces.Count : 0;
     public int MergeCount => mergeCount;
     // 한 번이라도 병합했으면 병합 블록이며, 소모 블록으로 쓸 수 없다.
@@ -61,6 +62,19 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     // 코어 조각의 위치(블록 로컬 좌표, 배율 적용 전)와 월드 위치.
     public Vector2 CoreLocalPosition => ((RectTransform)coreBlock.transform).anchoredPosition;
     public Vector3 CoreWorldPosition => coreBlock.transform.position;
+
+    public abstract BlockKind Kind { get; }
+    // BlockSettings의 코어 색상 목록에서 이 블록이 쓸 색의 번호. 0은 스탯 블록 색, 1~7은 속성 색이다.
+    public abstract int ColorIndex { get; }
+
+    // 이 블록(병합할 블록)에 material(소모 블록)을 병합할 때, 블록 종류에 따라 다른 조건이 맞는지 본다.
+    // 소모 블록이 원본인지, 남은 병합 횟수, 인접 여부처럼 모든 블록에 같은 조건은 MergeResultSlot이 검사한다.
+    public abstract MergeMismatch GetMergeMismatch(Block material);
+    // 병합 결과 블록에 병합할 블록(source)의 종류별 정보를 복사한다. source는 이 블록과 같은 클래스이다.
+    public abstract void CopyKindDataFrom(Block source);
+    // 종류별 정보를 저장 정보에 쓰고, 저장 정보에서 읽는다. 공통 정보는 BlockSaveData와 BlockManager가 맡는다.
+    public abstract void WriteKindData(BlockSaveData data);
+    public abstract void ReadKindData(BlockSaveData data);
 
     private void Awake()
     {
@@ -161,20 +175,6 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         rectTransform.anchoredPosition = originalAnchoredPosition;
     }
 
-    public void SetCore(int coreId)
-    {
-        core = coreId;
-        if (!HasStat)
-        {
-            stat = BlockStat.None;
-        }
-
-        if (!HasSkill)
-        {
-            skill = SkillType.None;
-        }
-    }
-
     public void SetBlockId(int id)
     {
         blockId = id;
@@ -183,18 +183,6 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     public void SetMergeCount(int count)
     {
         mergeCount = Mathf.Max(0, count);
-    }
-
-    // 스탯 블록(core 0)이 아니면 스탯은 항상 None이다.
-    public void SetStat(BlockStat blockStat)
-    {
-        stat = HasStat ? blockStat : BlockStat.None;
-    }
-
-    // 속성 블록(core 1~7)이 아니면 스킬은 항상 None이다.
-    public void SetSkill(SkillType skillType)
-    {
-        skill = HasSkill ? skillType : SkillType.None;
     }
 
     // 원본 점수와 강을 정하고, 1강당 증가율(%)로 최종 점수를 다시 계산한다.
@@ -211,15 +199,10 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         currentTarget = target;
     }
 
-    // 병합 결과처럼 프리팹이 없는 모양의 블록을 조각 프리팹으로 조립한다.
+    // 블록 모양을 조각 프리팹으로 조립한다. 드롭, 병합, 불러오기 모두 이 방식으로 만든다.
     // cells는 좌상단이 (0,0)인 칸 좌표이며, coreCell은 그 중 코어 칸이다.
-    public void Build(int coreId, int blockMergeCount, BlockStat blockStat, SkillType skillType,
-        IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab)
+    public void Build(IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab)
     {
-        core = coreId;
-        mergeCount = Mathf.Max(0, blockMergeCount);
-        SetStat(blockStat);
-        SetSkill(skillType);
         pieces = new List<GameObject>(cells.Count);
 
         defaultSizeDelta = new Vector2(PieceUnit, PieceUnit);
@@ -244,7 +227,6 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
             }
         }
     }
-    
 
     public void ApplyColor(Color color)
     {

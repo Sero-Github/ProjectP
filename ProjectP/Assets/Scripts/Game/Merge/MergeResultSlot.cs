@@ -12,11 +12,12 @@ public class MergeResultSlot : BlockGrid
     private const string SYSTEM_MERGE_NOT_SYNC_CORE = "두 블록의 코어의 종류가 같아야 합니다.";
     private const string SYSTEM_MERGE_NOT_SYNC_STAT = "두 블록의 스탯이 같아야 합니다.";
     private const string SYSTEM_MERGE_NOT_SYNC_SKILL = "두 블록의 스킬이 같아야 합니다.";
+    private const string SYSTEM_MERGE_NOT_MERGEABLE = "병합할 수 없는 블록입니다.";
     private const string SYSTEM_MERGE_MATERIAL_NOT_ORIGINAL = "소모 블록은 병합하지 않은 원본 블록이어야 합니다.";
     private const string SYSTEM_MERGE_NO_REMAINING_COUNT = "병합할 블록의 남은 병합 횟수가 없습니다.";
     private const string SYSTEM_MERGE_NO_ATTACH_BLOCK = "인접한 블록이 있어야 합니다.";
 
-    // 병합할 블록(좌측). 결과 블록의 코어는 이 블록을 따른다.
+    // 병합할 블록(좌측). 결과 블록의 종류와 종류별 정보는 이 블록을 따른다.
     [SerializeField] private MergeSlot targetSlot;
     // 소모 블록(우측).
     [SerializeField] private MergeSlot materialSlot;
@@ -150,8 +151,8 @@ public class MergeResultSlot : BlockGrid
         Storage.Instance.AddBlock(result);
     }
 
-    // 결과 블록은 병합할 블록의 코어를 따르고, 병합 횟수가 1 오르며, 원본 블록 점수는 두 블록의 원본 점수를 더한다.
-    // 스탯 수치와 스킬 점수는 모두 블록 점수로 계산되므로, 스탯·스킬은 종류만 넘긴다.
+    // 결과 블록은 병합할 블록과 같은 종류이고 종류별 정보(스탯, 속성·스킬·타격 우선순위 등)도 병합할 블록을 따른다.
+    // 병합 횟수가 1 오르며, 원본 블록 점수는 두 블록의 원본 점수를 더한다.
     private Block CreateResultBlock(Block target, Block material, HashSet<Vector2Int> cells)
     {
         BlockManager blockManager = BlockManager.Instance;
@@ -160,10 +161,8 @@ public class MergeResultSlot : BlockGrid
             return null;
         }
 
-        BlockStat stat = target.HasStat ? target.Stat : BlockStat.None;
         int baseScore = target.BaseScore + material.BaseScore;
-        return blockManager.CreateMergedBlock(target.Core, target.MergeCount + 1, stat, target.Skill,
-            baseScore, new List<Vector2Int>(cells), targetSlot.CoreCell);
+        return blockManager.CreateMergedBlock(target, target.MergeCount + 1, baseScore, new List<Vector2Int>(cells), targetSlot.CoreCell);
     }
 
     // 두 블록이 슬롯에서 차지한 칸을 같은 좌표계로 합친다.
@@ -182,25 +181,16 @@ public class MergeResultSlot : BlockGrid
         }
     }
 
-    // 코어가 같고(스탯 블록이면 스탯, 속성 블록이면 스킬도 같고), 소모 블록이 원본 블록이고,
+    // 블록 종류별 조건(Block.GetMergeMismatch)이 맞고, 소모 블록이 원본 블록이고,
     // 병합할 블록에 남은 병합 횟수(최대 합 − 합)가 있으며, 합친 칸이 하나로 이어져 있어야 병합할 수 있다.
     // 큐브 비용 조건은 데이터가 생기면 추가한다.
     // 병합할 수 있으면 null, 없으면 경고 메시지를 반환한다.
     private string GetMergeInvalidReason(Block target, Block material, HashSet<Vector2Int> cells)
     {
-        if (target.Core != material.Core)
+        string mismatchMessage = GetMismatchMessage(target.GetMergeMismatch(material));
+        if (mismatchMessage != null)
         {
-            return SYSTEM_MERGE_NOT_SYNC_CORE;
-        }
-
-        if (target.HasStat && target.Stat.Type != material.Stat.Type)
-        {
-            return SYSTEM_MERGE_NOT_SYNC_STAT;
-        }
-
-        if (target.HasSkill && target.Skill != material.Skill)
-        {
-            return SYSTEM_MERGE_NOT_SYNC_SKILL;
+            return mismatchMessage;
         }
 
         if (material.IsMerged)
@@ -220,6 +210,24 @@ public class MergeResultSlot : BlockGrid
         }
 
         return null;
+    }
+
+    // 종류와 속성이 다르면 지금처럼 코어 불일치 메시지를 쓴다. 맞으면 null이다.
+    private static string GetMismatchMessage(Block.MergeMismatch mismatch)
+    {
+        switch (mismatch)
+        {
+            case Block.MergeMismatch.None:
+                return null;
+            case Block.MergeMismatch.DifferentStat:
+                return SYSTEM_MERGE_NOT_SYNC_STAT;
+            case Block.MergeMismatch.DifferentSkill:
+                return SYSTEM_MERGE_NOT_SYNC_SKILL;
+            case Block.MergeMismatch.NotMergeable:
+                return SYSTEM_MERGE_NOT_MERGEABLE;
+            default:
+                return SYSTEM_MERGE_NOT_SYNC_CORE;
+        }
     }
 
     private static bool IsConnected(HashSet<Vector2Int> cells)

@@ -7,8 +7,9 @@ public class BlockSettings : ScriptableObject
 {
     private static readonly Color DefaultCoreColor = Color.white;
 
-    [Tooltip("🧱 블록 문서의 블록 종류 순서대로 둡니다. 인덱스 + 1이 블록 번호입니다.")]
-    [SerializeField] private List<Block> blockPrefabs = new List<Block>();
+    // 필드 이름은 에셋에 저장된 목록을 그대로 읽기 위해 바꾸지 않는다.
+    [Tooltip("블록 모양 프리팹(BlockShape). 🧱 블록 문서의 블록 종류 순서대로 둡니다. 인덱스 + 1이 블록 번호입니다.")]
+    [SerializeField] private List<BlockShape> blockPrefabs = new List<BlockShape>();
 
     [Tooltip("병합 블록처럼 임의 모양의 블록을 조립할 때 쓰는 조각 프리팹")]
     [SerializeField] private GameObject blockPiecePrefab;
@@ -32,7 +33,7 @@ public class BlockSettings : ScriptableObject
     [Min(0)]
     [SerializeField] private int enhanceRatePercent = 20;
 
-    public IReadOnlyList<Block> BlockPrefabs => blockPrefabs;
+    public IReadOnlyList<BlockShape> BlockShapes => blockPrefabs;
     public GameObject BlockPiecePrefab => blockPiecePrefab;
     public int CoreCount => coreColors.Count;
     public BlockStatData StatData => statData;
@@ -40,8 +41,8 @@ public class BlockSettings : ScriptableObject
     public int MaxMergeCount => maxMergeCount;
     public int EnhanceRatePercent => enhanceRatePercent;
 
-    // 블록 번호(1부터)에 맞는 프리팹. 없으면 null이다.
-    public Block GetBlockPrefab(int blockId)
+    // 블록 번호(1부터)에 맞는 모양 프리팹. 없으면(병합 블록) null이다.
+    public BlockShape GetBlockShape(int blockId)
     {
         int index = blockId - 1;
         return index >= 0 && index < blockPrefabs.Count ? blockPrefabs[index] : null;

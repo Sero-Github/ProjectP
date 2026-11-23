@@ -46,10 +46,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 3625859796507262407}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ad4c1d4a82e87a449435e7649e1207d, type: 3}
+  m_Script: {fileID: 11500000, guid: 7c3e9a51d84f4b2e9f06a2b1c5d8e413, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Block
-  grade: 1
+  m_EditorClassIdentifier: Assembly-CSharp::BlockShape
   pieces:
   - {fileID: 5868485687563831057}
   coreBlock: {fileID: 5868485687563831057}

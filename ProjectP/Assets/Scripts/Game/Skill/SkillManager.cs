@@ -98,28 +98,28 @@ public class SkillManager : MonoBehaviour
 
         foreach (var block in backpack.PlacedBlocks.Keys)
         {
-            if (block == null || !block.HasSkill)
+            if (block is not SkillBlock skillBlock)
             {
                 continue;
             }
 
-            if (!elements.Contains(block.Element))
+            if (!elements.Contains(skillBlock.Element))
             {
-                elements.Add(block.Element);
+                elements.Add(skillBlock.Element);
             }
 
-            if (block.Skill == SkillType.None)
+            if (skillBlock.Skill == SkillType.None)
             {
                 continue;
             }
 
-            SkillState state = FindSkill(block.Skill, block.Element);
+            SkillState state = FindSkill(skillBlock.Skill, skillBlock.Element);
             if (state == null)
             {
-                state = new SkillState(block.Skill, block.Element);
+                state = new SkillState(skillBlock.Skill, skillBlock.Element);
                 skills.Add(state);
             }
-            state.Add(block.Score);
+            state.Add(skillBlock.Score);
         }
 
         skills.Sort((a, b) => a.Skill != b.Skill ? a.Skill.CompareTo(b.Skill) : a.Element.CompareTo(b.Element));

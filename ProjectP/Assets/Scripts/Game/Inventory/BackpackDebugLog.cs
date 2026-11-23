@@ -38,22 +38,31 @@ public static class BackpackDebugLog
 
     private static void AppendBlock(StringBuilder builder, Block block, Vector2Int coreCell, List<Vector2Int> cells, BlockSettings settings)
     {
+        builder.Append($"{block.GetType().Name} ");
         builder.Append(block.BlockId == 0 ? "병합 블록" : $"{block.BlockId}번 블록");
         builder.Append($" | 코어 칸 {coreCell}, {cells.Count}칸 [{string.Join(" ", cells)}]");
 
-        if (block.HasStat)
+        switch (block)
         {
-            BlockStatData statData = settings != null ? settings.StatData : null;
-            int statValue = BlockStatData.GetValueOrDefault(statData, block.Stat.Type, block.Score);
-            int valuePerScore = statData != null ? statData.GetValuePerScore(block.Stat.Type) : BlockStatData.GetDefaultValuePerScore(block.Stat.Type);
-            builder.Append($" | 스탯 {block.Stat.Type} {statValue} (점수 {block.Score} × {valuePerScore})");
-        }
-        else
-        {
-            // 블록 하나만의 보너스 횟수다. 실제 보너스는 같은 스킬·속성 블록 점수를 모두 더해 계산한다.
-            var skillScore = new SkillScore(block.Score);
-            int bonusCount = skillScore.ElementAttackBonusCount + skillScore.CooldownBonusCount + skillScore.SkillBonusCount;
-            builder.Append($" | 스킬 {block.Skill}, 속성 {block.Element}, 스킬 점수 {skillScore.score}, 보너스 {bonusCount}회");
+            case StatBlock statBlock:
+            {
+                BlockStatData statData = settings != null ? settings.StatData : null;
+                int statValue = BlockStatData.GetValueOrDefault(statData, statBlock.Stat, statBlock.Score);
+                int valuePerScore = statData != null ? statData.GetValuePerScore(statBlock.Stat) : BlockStatData.GetDefaultValuePerScore(statBlock.Stat);
+                builder.Append($" | 스탯 {statBlock.Stat} {statValue} (점수 {statBlock.Score} × {valuePerScore})");
+                break;
+            }
+            case SkillBlock skillBlock:
+            {
+                // 블록 하나만의 보너스 횟수다. 실제 보너스는 같은 스킬·속성 블록 점수를 모두 더해 계산한다.
+                var skillScore = new SkillScore(skillBlock.Score);
+                int bonusCount = skillScore.ElementAttackBonusCount + skillScore.CooldownBonusCount + skillScore.SkillBonusCount;
+                builder.Append($" | 스킬 {skillBlock.Skill}, 속성 {skillBlock.Element}, 타격 {skillBlock.TargetPriority}, 스킬 점수 {skillScore.score}, 보너스 {bonusCount}회");
+                break;
+            }
+            case ActiveSkillBlock activeSkillBlock:
+                builder.Append($" | 액티브 스킬 {activeSkillBlock.ActiveSkill}");
+                break;
         }
 
         int remainingMerges = BlockManager.Instance != null ? BlockManager.Instance.GetRemainingMerges(block) : 0;

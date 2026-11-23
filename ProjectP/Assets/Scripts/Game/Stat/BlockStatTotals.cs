@@ -25,12 +25,12 @@ public class BlockStatTotals
 
         foreach (var block in blocks)
         {
-            if (block == null || !block.HasStat || block.Stat.Type == StatType.None)
+            if (block is not StatBlock statBlock || statBlock.Stat == StatType.None)
             {
                 continue;
             }
 
-            StatType type = block.Stat.Type;
+            StatType type = statBlock.Stat;
             int value = BlockStatData.GetValueOrDefault(statData, type, block.Score);
             totals[type] = Get(type) + value;
 
