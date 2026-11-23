@@ -94,7 +94,8 @@ public class SupportShooter : MonoBehaviour
             lane.Score = state.Score;
             lanes.Add(lane);
 
-            int count = data.CreatureCount + BonusCreatureCount * new SkillScore(lane.Score).ThirdCount;
+            var skillScore = new SkillScore(lane.Score);
+            int count = data.CreatureCount + BonusCreatureCount * skillScore.SkillBonusCount;
             ResizeCreatures(lane, count);
         }
 
@@ -176,13 +177,13 @@ public class SupportShooter : MonoBehaviour
 
         // 궤적의 타격과 복귀 후 쿨타임은 출격하는 순간의 블록 스탯으로 정합니다.
         BlockStatTotals blockStats = SkillManager.Instance != null ? SkillManager.Instance.Stats : BlockStatTotals.Empty;
-        var score = new SkillScore(lane.Score);
+        var skillScore = new SkillScore(lane.Score);
 
         // 속성 효과는 대미지 증가가 적용되지 않은 속성 공격력으로 계산하므로 타격 대미지와 함께 넘깁니다.
-        int elementAttack = blockStats.GetElementAttack(lane.Element) + score.ElementAttack + BonusElementAttack * score.FirstCount;
+        int elementAttack = blockStats.GetElementAttack(lane.Element) + skillScore.score + BonusElementAttack * skillScore.ElementAttackBonusCount;
         var hit = new ElementHit(blockStats.ApplyDamage(data.Attack, elementAttack), lane.Element, elementAttack);
 
-        float cooldown = blockStats.ApplyCooldown(data.Cooldown) * Mathf.Pow(BonusCooldownMultiplier, score.SecondCount);
+        float cooldown = blockStats.ApplyCooldown(data.Cooldown) * Mathf.Pow(BonusCooldownMultiplier, skillScore.CooldownBonusCount);
         creature.Launch(transform.position, target, hit, Mathf.Max(MinCooldown, cooldown));
     }
 

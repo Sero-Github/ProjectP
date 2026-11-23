@@ -7,7 +7,7 @@ using UnityEngine;
 // 인벤토리 패널은 꺼져 있을 수 있으므로 항상 켜진 오브젝트에 붙인다.
 public class SkillManager : MonoBehaviour
 {
-    // 스킬 종류와 속성 조합 하나에 배치된 블록 수와 스킬 점수 합계.
+    // 스킬 종류와 속성 조합 하나에 배치된 블록 수와 스킬 점수. 스킬 점수는 해당 블록들의 블록 점수(강화 반영) 합이다.
     public class SkillState
     {
         public SkillState(SkillType skill, Element element)
@@ -119,7 +119,7 @@ public class SkillManager : MonoBehaviour
                 state = new SkillState(block.Skill, block.Element);
                 skills.Add(state);
             }
-            state.Add(block.SkillScore);
+            state.Add(block.Score);
         }
 
         skills.Sort((a, b) => a.Skill != b.Skill ? a.Skill.CompareTo(b.Skill) : a.Element.CompareTo(b.Element));

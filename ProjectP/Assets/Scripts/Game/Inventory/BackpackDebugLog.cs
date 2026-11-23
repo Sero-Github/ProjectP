@@ -50,7 +50,10 @@ public static class BackpackDebugLog
         }
         else
         {
-            builder.Append($" | 스킬 {block.Skill}, 속성 {block.Element}, 스킬 점수 {block.SkillScore}");
+            // 블록 하나만의 보너스 횟수다. 실제 보너스는 같은 스킬·속성 블록 점수를 모두 더해 계산한다.
+            var skillScore = new SkillScore(block.Score);
+            int bonusCount = skillScore.ElementAttackBonusCount + skillScore.CooldownBonusCount + skillScore.SkillBonusCount;
+            builder.Append($" | 스킬 {block.Skill}, 속성 {block.Element}, 스킬 점수 {skillScore.score}, 보너스 {bonusCount}회");
         }
 
         builder.Append($" | 등급 {block.Grade}, 합 {block.MergeCount}, 남은 병합 {block.RemainingMerges}");

@@ -16,6 +16,7 @@ public class BlockSaveData
     // 옛 저장 파일의 스탯 수치. 새로 저장할 때는 쓰지 않고, 원본 점수가 없던 옛 파일을 변환할 때만 읽는다.
     public int statValue;
     public string skill;
+    // 옛 저장 파일의 스킬 점수(칸 수의 합). 새로 저장할 때는 쓰지 않고, 원본 점수가 없던 옛 파일을 변환할 때만 읽는다.
     public int skillScore;
     // 강화하지 않은 원본 블록 점수와 강. 최종 점수는 불러올 때 다시 계산한다.
     // 이 필드가 없던 옛 저장 파일은 0으로 읽히며, BlockManager가 옛 값으로 바꿔 읽는다.
@@ -38,7 +39,6 @@ public class BlockSaveData
             mergeCount = block.MergeCount,
             stat = block.Stat.Type.ToString(),
             skill = block.Skill.ToString(),
-            skillScore = block.SkillScore,
             baseScore = block.BaseScore,
             enhanceLevel = block.EnhanceLevel,
             pieces = new List<Vector2Int>(block.GetPieceOffsets()),

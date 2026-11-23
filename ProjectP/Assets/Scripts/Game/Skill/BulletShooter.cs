@@ -205,11 +205,11 @@ public class BulletShooter : MonoBehaviour
             return;
         }
 
-        var score = new SkillScore(lane.Score);
+        var skillScore = new SkillScore(lane.Score);
 
         // 광역 탄환은 한 번에 한 발만 쏜다.
         int projectileCount = lane.Skill == SkillType.Bullet
-            ? GetBulletData(lane).ProjectileCount + BulletBonusProjectileCount * score.ThirdCount
+            ? GetBulletData(lane).ProjectileCount + BulletBonusProjectileCount * skillScore.SkillBonusCount
             : 1;
         CollectTargets(projectileCount);
         if (targets.Count == 0)
@@ -239,13 +239,13 @@ public class BulletShooter : MonoBehaviour
         float cooldownMultiplier;
         if (lane.Skill == SkillType.AreaBullet)
         {
-            FireAreaBullets(lane, score, blockStats);
-            cooldownMultiplier = Mathf.Pow(AreaBonusCooldownMultiplier, score.SecondCount);
+            FireAreaBullets(lane, skillScore, blockStats);
+            cooldownMultiplier = Mathf.Pow(AreaBonusCooldownMultiplier, skillScore.CooldownBonusCount);
         }
         else
         {
-            FireBullets(lane, score, blockStats);
-            cooldownMultiplier = Mathf.Pow(BulletBonusCooldownMultiplier, score.SecondCount);
+            FireBullets(lane, skillScore, blockStats);
+            cooldownMultiplier = Mathf.Pow(BulletBonusCooldownMultiplier, skillScore.CooldownBonusCount);
         }
 
         lane.WaitingFirstShot = false;
@@ -279,10 +279,11 @@ public class BulletShooter : MonoBehaviour
         return new ElementHit(blockStats.ApplyDamage(baseAttack, elementAttack), lane.Element, elementAttack);
     }
 
-    private void FireBullets(Lane lane, SkillScore score, BlockStatTotals blockStats)
+    private void FireBullets(Lane lane, SkillScore skillScore, BlockStatTotals blockStats)
     {
         BulletData data = GetBulletData(lane);
-        ElementHit hit = CreateHit(lane, blockStats, data.Attack, score.ElementAttack + BulletBonusElementAttack * score.FirstCount);
+        ElementHit hit = CreateHit(lane, blockStats, data.Attack,
+            skillScore.score + BulletBonusElementAttack * skillScore.ElementAttackBonusCount);
 
         foreach (Enemy target in targets)
         {
@@ -293,12 +294,13 @@ public class BulletShooter : MonoBehaviour
     }
 
     // 공격 지대의 크기와 유지 시간은 발사 순간의 지속 시간, 범위 증가 스탯과 스킬 점수 보너스로 정합니다.
-    private void FireAreaBullets(Lane lane, SkillScore score, BlockStatTotals blockStats)
+    private void FireAreaBullets(Lane lane, SkillScore skillScore, BlockStatTotals blockStats)
     {
-        ElementHit hit = CreateHit(lane, blockStats, areaData.Attack, score.ElementAttack + AreaBonusElementAttack * score.FirstCount);
+        ElementHit hit = CreateHit(lane, blockStats, areaData.Attack,
+            skillScore.score + AreaBonusElementAttack * skillScore.ElementAttackBonusCount);
         var impact = new Bullet.AreaImpact(
-            blockStats.ApplyRange(areaData.ZoneDiameter * 0.5f, AreaBonusRangePercent * score.ThirdCount),
-            blockStats.ApplyDuration(areaData.ZoneDuration, AreaBonusDurationPercent * score.ThirdCount),
+            blockStats.ApplyRange(areaData.ZoneDiameter * 0.5f, AreaBonusRangePercent * skillScore.SkillBonusCount),
+            blockStats.ApplyDuration(areaData.ZoneDuration, AreaBonusDurationPercent * skillScore.SkillBonusCount),
             areaData.ZoneGrowTime,
             areaData.ZoneShrinkTime);
 

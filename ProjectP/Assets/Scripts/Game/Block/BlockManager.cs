@@ -45,9 +45,8 @@ public class BlockManager : MonoBehaviour
         }
         if (block.HasSkill)
         {
-            // 스킬 점수는 기획의 점수 표(등급, 칸 수)가 정해지기 전까지 칸 수로 둔다.
-            SkillType skill = SkillTypes[UnityEngine.Random.Range(0, SkillTypes.Length)];
-            block.SetSkill(skill, block.PieceCount);
+            // 스킬 점수는 블록 점수를 쓰므로 종류만 고른다.
+            block.SetSkill(SkillTypes[UnityEngine.Random.Range(0, SkillTypes.Length)]);
         }
         SetScore(block, BlockScore.FromCells(block.PieceCount, settings.ScorePerCell), 0);
         block.ApplyColor(GetColorForCore(block.Core));
@@ -57,7 +56,7 @@ public class BlockManager : MonoBehaviour
 
     // 병합 결과처럼 임의 모양의 블록을 만든다. cells는 어떤 좌표계여도 되며 좌상단 기준으로 정렬된다.
     // baseScore는 강화하지 않은 원본 점수이며, 만들어진 블록은 0강이다.
-    public Block CreateMergedBlock(int coreId, int grade, int mergeCount, BlockStat stat, SkillType skill, int skillScore,
+    public Block CreateMergedBlock(int coreId, int grade, int mergeCount, BlockStat stat, SkillType skill,
         int baseScore, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell)
     {
         GameObject blockPiecePrefab = settings != null ? settings.BlockPiecePrefab : null;
@@ -82,7 +81,7 @@ public class BlockManager : MonoBehaviour
 
         var go = new GameObject("Block_Merged", typeof(RectTransform));
         Block block = go.AddComponent<Block>();
-        block.Build(coreId, grade, mergeCount, stat, skill, skillScore, normalizedCells, coreCell - min, blockPiecePrefab);
+        block.Build(coreId, grade, mergeCount, stat, skill, normalizedCells, coreCell - min, blockPiecePrefab);
         SetScore(block, baseScore, 0);
         block.ApplyColor(GetColorForCore(coreId));
 
@@ -110,7 +109,7 @@ public class BlockManager : MonoBehaviour
             // SetStat, SetSkill은 core에 따라 값을 거르므로 core를 먼저 정한다.
             block.SetCore(data.core);
             block.SetStat(stat);
-            block.SetSkill(data.SkillType, data.skillScore);
+            block.SetSkill(data.SkillType);
             SetScore(block, baseScore, data.enhanceLevel);
             block.ApplyColor(GetColorForCore(block.Core));
             return block;
@@ -123,7 +122,7 @@ public class BlockManager : MonoBehaviour
         }
 
         // 저장된 조각 오프셋은 코어 칸이 (0,0)이다.
-        Block merged = CreateMergedBlock(data.core, data.grade, data.mergeCount, stat, data.SkillType, data.skillScore,
+        Block merged = CreateMergedBlock(data.core, data.grade, data.mergeCount, stat, data.SkillType,
             baseScore, data.pieces, Vector2Int.zero);
         if (merged != null)
         {

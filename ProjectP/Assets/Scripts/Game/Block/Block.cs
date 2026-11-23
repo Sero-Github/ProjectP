@@ -18,9 +18,8 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     [SerializeField, Min(0)] private int mergeCount;
     // 스탯 블록(core 0)만 사용한다.
     [SerializeField] private BlockStat stat;
-    // 속성 블록(core 1~7)만 사용한다. 스킬 점수는 병합할 때 합산된다.
+    // 속성 블록(core 1~7)만 사용한다. 스킬 점수는 따로 두지 않고 블록 점수(score)를 쓴다.
     [SerializeField] private SkillType skill;
-    [SerializeField] private int skillScore;
     // 강화하지 않은(0강) 원본 점수. 🧱 블록 강화 4장의 "원본 점수(3합 0강)"이다.
     // 드롭 블록은 칸 수 × 칸당 점수이고, 병합하면 두 블록의 원본 점수를 더한다.
     [SerializeField, Min(0)] private int baseScore;
@@ -50,7 +49,6 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     public BlockStat Stat => stat;
     public bool HasStat => core == 0;
     public SkillType Skill => skill;
-    public int SkillScore => skillScore;
     public int BaseScore => baseScore;
     public int EnhanceLevel => enhanceLevel;
     public int Score => score;
@@ -179,7 +177,6 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         if (!HasSkill)
         {
             skill = SkillType.None;
-            skillScore = 0;
         }
     }
 
@@ -204,11 +201,10 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         stat = HasStat ? blockStat : BlockStat.None;
     }
 
-    // 속성 블록(core 1~7)이 아니면 스킬은 항상 None, 점수는 0이다.
-    public void SetSkill(SkillType skillType, int score)
+    // 속성 블록(core 1~7)이 아니면 스킬은 항상 None이다.
+    public void SetSkill(SkillType skillType)
     {
         skill = HasSkill ? skillType : SkillType.None;
-        skillScore = HasSkill ? score : 0;
     }
 
     // 원본 점수와 강을 정하고, 1강당 증가율(%)로 최종 점수를 다시 계산한다.
@@ -227,14 +223,14 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
 
     // 병합 결과처럼 프리팹이 없는 모양의 블록을 조각 프리팹으로 조립한다.
     // cells는 좌상단이 (0,0)인 칸 좌표이며, coreCell은 그 중 코어 칸이다.
-    public void Build(int coreId, int blockGrade, int blockMergeCount, BlockStat blockStat, SkillType skillType, int score,
+    public void Build(int coreId, int blockGrade, int blockMergeCount, BlockStat blockStat, SkillType skillType,
         IReadOnlyList<Vector2Int> cells, Vector2Int coreCell, GameObject piecePrefab)
     {
         core = coreId;
         SetGrade(blockGrade);
         mergeCount = Mathf.Max(0, blockMergeCount);
         SetStat(blockStat);
-        SetSkill(skillType, score);
+        SetSkill(skillType);
         pieces = new List<GameObject>(cells.Count);
 
         defaultSizeDelta = new Vector2(PieceUnit, PieceUnit);
