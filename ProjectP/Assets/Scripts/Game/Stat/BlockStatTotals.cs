@@ -3,19 +3,20 @@ using UnityEngine;
 
 // 블록들의 스탯을 종류별로 합산한 값. SkillManager가 가방에 배치된 블록으로 만들어 가지며,
 // 플레이어와 공격 스킬이 참조한다.
-// 수식은 📊 스탯 문서를 따른다.
+// 블록 하나의 스탯 수치는 블록 점수 × 점수 1당 수치(BlockStatData)이다. 수식은 📊 스탯 문서를 따른다.
 public class BlockStatTotals
 {
     // 쿨타임 감소는 가장 높은 값 20개만 적용한다.
     public const int MaxCooldownReductionCount = 20;
 
-    public static readonly BlockStatTotals Empty = new BlockStatTotals(null);
+    public static readonly BlockStatTotals Empty = new BlockStatTotals(null, null);
 
     private readonly Dictionary<StatType, int> totals = new Dictionary<StatType, int>();
-    // 쿨타임 감소는 곱 적용이므로 합산 값과 별개로 블록별 값을 높은 순으로 둔다. 병합 블록은 이미 합산된 하나의 값이다.
+    // 쿨타임 감소는 곱 적용이므로 합산 값과 별개로 블록별 값을 높은 순으로 둔다. 병합 블록은 합친 점수로 계산한 하나의 값이다.
     private readonly List<int> cooldownReductions = new List<int>();
 
-    public BlockStatTotals(IEnumerable<Block> blocks)
+    // statData가 없으면 기획 기본 계수로 계산한다.
+    public BlockStatTotals(IEnumerable<Block> blocks, BlockStatData statData)
     {
         if (blocks == null)
         {
@@ -29,12 +30,13 @@ public class BlockStatTotals
                 continue;
             }
 
-            BlockStat stat = block.Stat;
-            totals[stat.Type] = Get(stat.Type) + stat.Value;
+            StatType type = block.Stat.Type;
+            int value = BlockStatData.GetValueOrDefault(statData, type, block.Score);
+            totals[type] = Get(type) + value;
 
-            if (stat.Type == StatType.CooldownReduction)
+            if (type == StatType.CooldownReduction)
             {
-                cooldownReductions.Add(stat.Value);
+                cooldownReductions.Add(value);
             }
         }
 

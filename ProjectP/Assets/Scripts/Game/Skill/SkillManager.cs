@@ -81,9 +81,17 @@ public class SkillManager : MonoBehaviour
         return state != null ? state.Score : 0;
     }
 
+    // 스탯 계수 표. 씬에 따로 연결하지 않고 BlockManager의 블록 설정에서 가져온다. 없으면 null이며 기본 계수로 계산한다.
+    private static BlockStatData GetStatData()
+    {
+        BlockManager blockManager = BlockManager.Instance;
+        BlockSettings settings = blockManager != null ? blockManager.Settings : null;
+        return settings != null ? settings.StatData : null;
+    }
+
     private void Rebuild(Backpack backpack)
     {
-        Stats = new BlockStatTotals(backpack.PlacedBlocks.Keys);
+        Stats = new BlockStatTotals(backpack.PlacedBlocks.Keys, GetStatData());
 
         skills.Clear();
         elements.Clear();

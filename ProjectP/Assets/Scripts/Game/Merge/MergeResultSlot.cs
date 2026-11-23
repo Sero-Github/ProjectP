@@ -152,7 +152,8 @@ public class MergeResultSlot : BlockGrid
     }
 
     // 결과 블록은 병합할 블록의 코어와 등급을 따르고, 병합 횟수가 1 오르며,
-    // 스탯 블록이면 두 스탯을, 속성 블록이면 두 스킬 점수를 합산한다. 원본 블록 점수는 두 블록의 원본 점수를 더한다.
+    // 속성 블록이면 두 스킬 점수를 합산한다. 원본 블록 점수는 두 블록의 원본 점수를 더한다.
+    // 스탯 블록은 종류가 같아야 병합되고, 스탯 수치는 합친 점수로 계산되므로 종류만 넘긴다.
     private Block CreateResultBlock(Block target, Block material, HashSet<Vector2Int> cells)
     {
         BlockManager blockManager = BlockManager.Instance;
@@ -161,7 +162,7 @@ public class MergeResultSlot : BlockGrid
             return null;
         }
 
-        BlockStat stat = target.HasStat ? BlockStat.Merge(target.Stat, material.Stat) : BlockStat.None;
+        BlockStat stat = target.HasStat ? target.Stat : BlockStat.None;
         int skillScore = target.HasSkill ? target.SkillScore + material.SkillScore : 0;
         int baseScore = target.BaseScore + material.BaseScore;
         return blockManager.CreateMergedBlock(target.Core, target.Grade, target.MergeCount + 1, stat, target.Skill, skillScore,

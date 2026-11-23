@@ -13,6 +13,7 @@ public class BlockSaveData
     public int grade = 1;
     public int mergeCount;
     public string stat;
+    // 옛 저장 파일의 스탯 수치. 새로 저장할 때는 쓰지 않고, 원본 점수가 없던 옛 파일을 변환할 때만 읽는다.
     public int statValue;
     public string skill;
     public int skillScore;
@@ -36,7 +37,6 @@ public class BlockSaveData
             grade = block.Grade,
             mergeCount = block.MergeCount,
             stat = block.Stat.Type.ToString(),
-            statValue = block.Stat.Value,
             skill = block.Skill.ToString(),
             skillScore = block.SkillScore,
             baseScore = block.BaseScore,

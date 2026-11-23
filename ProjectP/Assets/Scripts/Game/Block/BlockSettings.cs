@@ -16,7 +16,7 @@ public class BlockSettings : ScriptableObject
     [Tooltip("인덱스가 core 번호입니다. 0은 스탯 블록 색상(흰색), 1~7은 Element 속성 색상입니다.")]
     [SerializeField] private List<Color> coreColors = new List<Color>();
 
-    [Tooltip("스탯 블록의 블록 종류별 스탯 점수")]
+    [Tooltip("스탯별 점수 1당 수치. 스탯 수치 = 블록 점수 × 이 값. 비어 있으면 기본 계수(속성 공격력 3, 나머지 1)를 씁니다.")]
     [SerializeField] private BlockStatData statData;
 
     [Tooltip("드랍되는 블록의 등급. 등급별 드랍이 정해지기 전까지는 1등급만 드랍합니다.")]

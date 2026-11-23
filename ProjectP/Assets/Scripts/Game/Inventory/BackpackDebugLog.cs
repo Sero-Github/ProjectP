@@ -43,7 +43,10 @@ public static class BackpackDebugLog
 
         if (block.HasStat)
         {
-            builder.Append($" | 스탯 {block.Stat.Type} {block.Stat.Value}");
+            BlockStatData statData = settings != null ? settings.StatData : null;
+            int statValue = BlockStatData.GetValueOrDefault(statData, block.Stat.Type, block.Score);
+            int valuePerScore = statData != null ? statData.GetValuePerScore(block.Stat.Type) : BlockStatData.GetDefaultValuePerScore(block.Stat.Type);
+            builder.Append($" | 스탯 {block.Stat.Type} {statValue} (점수 {block.Score} × {valuePerScore})");
         }
         else
         {

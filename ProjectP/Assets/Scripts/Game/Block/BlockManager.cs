@@ -6,7 +6,7 @@ public class BlockManager : MonoBehaviour
 {
     public static BlockManager Instance { get; private set; }
 
-    [Tooltip("블록 프리팹, 코어 색상, 스탯 점수 등 블록 생성 설정")]
+    [Tooltip("블록 프리팹, 코어 색상, 스탯 계수 등 블록 생성 설정")]
     [SerializeField] private BlockSettings settings;
 
     // 속성 블록에 무작위로 부여할 스킬 종류. None은 제외한다.
@@ -38,9 +38,10 @@ public class BlockManager : MonoBehaviour
         block.SetBlockId(prefabIndex + 1);
         block.SetGrade(settings.DropGrade);
         block.SetCore(UnityEngine.Random.Range(0, settings.CoreCount));
-        if (block.HasStat && settings.StatData != null)
+        if (block.HasStat)
         {
-            block.SetStat(settings.StatData.CreateRandomStat(block.BlockId));
+            // 스탯 수치는 블록 점수 × BlockStatData 계수로 계산하므로 종류만 고른다.
+            block.SetStat(new BlockStat(BlockStatData.GetRandomStatType()));
         }
         if (block.HasSkill)
         {
@@ -96,7 +97,7 @@ public class BlockManager : MonoBehaviour
             return null;
         }
 
-        var stat = new BlockStat(data.StatType, data.statValue);
+        var stat = new BlockStat(data.StatType);
         int baseScore = GetSavedBaseScore(data);
         Block prefab = settings != null ? settings.GetBlockPrefab(data.blockId) : null;
 
