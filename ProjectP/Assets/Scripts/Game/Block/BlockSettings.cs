@@ -19,16 +19,12 @@ public class BlockSettings : ScriptableObject
     [Tooltip("스탯별 점수 1당 수치. 스탯 수치 = 블록 점수 × 이 값. 비어 있으면 기본 계수(속성 공격력 3, 나머지 1)를 씁니다.")]
     [SerializeField] private BlockStatData statData;
 
-    [Tooltip("드랍되는 블록의 등급. 등급별 드랍이 정해지기 전까지는 1등급만 드랍합니다.")]
-    [Min(1)]
-    [SerializeField] private int dropGrade = 1;
-
     [Header("블록 점수")]
     [Tooltip("블록 한 칸당 점수. 원본 블록 점수 = 칸 수 × 이 값")]
     [Min(0)]
     [SerializeField] private int scorePerCell = 5;
 
-    [Tooltip("블록 하나를 병합할 수 있는 최대 횟수(합)")]
+    [Tooltip("블록 하나를 병합할 수 있는 최대 횟수(합). 기획은 모든 블록 3회입니다.")]
     [Min(0)]
     [SerializeField] private int maxMergeCount = 3;
 
@@ -40,7 +36,6 @@ public class BlockSettings : ScriptableObject
     public GameObject BlockPiecePrefab => blockPiecePrefab;
     public int CoreCount => coreColors.Count;
     public BlockStatData StatData => statData;
-    public int DropGrade => dropGrade;
     public int ScorePerCell => scorePerCell;
     public int MaxMergeCount => maxMergeCount;
     public int EnhanceRatePercent => enhanceRatePercent;

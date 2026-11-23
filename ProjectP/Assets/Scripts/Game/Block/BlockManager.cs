@@ -36,7 +36,6 @@ public class BlockManager : MonoBehaviour
         Block block = Instantiate(settings.BlockPrefabs[prefabIndex]);
 
         block.SetBlockId(prefabIndex + 1);
-        block.SetGrade(settings.DropGrade);
         block.SetCore(UnityEngine.Random.Range(0, settings.CoreCount));
         if (block.HasStat)
         {
@@ -56,7 +55,7 @@ public class BlockManager : MonoBehaviour
 
     // 병합 결과처럼 임의 모양의 블록을 만든다. cells는 어떤 좌표계여도 되며 좌상단 기준으로 정렬된다.
     // baseScore는 강화하지 않은 원본 점수이며, 만들어진 블록은 0강이다.
-    public Block CreateMergedBlock(int coreId, int grade, int mergeCount, BlockStat stat, SkillType skill,
+    public Block CreateMergedBlock(int coreId, int mergeCount, BlockStat stat, SkillType skill,
         int baseScore, IReadOnlyList<Vector2Int> cells, Vector2Int coreCell)
     {
         GameObject blockPiecePrefab = settings != null ? settings.BlockPiecePrefab : null;
@@ -81,7 +80,7 @@ public class BlockManager : MonoBehaviour
 
         var go = new GameObject("Block_Merged", typeof(RectTransform));
         Block block = go.AddComponent<Block>();
-        block.Build(coreId, grade, mergeCount, stat, skill, normalizedCells, coreCell - min, blockPiecePrefab);
+        block.Build(coreId, mergeCount, stat, skill, normalizedCells, coreCell - min, blockPiecePrefab);
         SetScore(block, baseScore, 0);
         block.ApplyColor(GetColorForCore(coreId));
 
@@ -104,7 +103,6 @@ public class BlockManager : MonoBehaviour
         {
             Block block = Instantiate(prefab);
             block.SetBlockId(data.blockId);
-            block.SetGrade(data.grade);
             block.SetMergeCount(data.mergeCount);
             // SetStat, SetSkill은 core에 따라 값을 거르므로 core를 먼저 정한다.
             block.SetCore(data.core);
@@ -122,7 +120,7 @@ public class BlockManager : MonoBehaviour
         }
 
         // 저장된 조각 오프셋은 코어 칸이 (0,0)이다.
-        Block merged = CreateMergedBlock(data.core, data.grade, data.mergeCount, stat, data.SkillType,
+        Block merged = CreateMergedBlock(data.core, data.mergeCount, stat, data.SkillType,
             baseScore, data.pieces, Vector2Int.zero);
         if (merged != null)
         {
@@ -152,6 +150,18 @@ public class BlockManager : MonoBehaviour
     {
         int enhanceRatePercent = settings != null ? settings.EnhanceRatePercent : 0;
         block.SetScore(baseScore, enhanceLevel, enhanceRatePercent);
+    }
+
+    // 남은 병합 횟수 = 최대 합 − 합. 블록은 설정 에셋을 모르므로 최대 합은 BlockSettings에서 가져온다.
+    // 블록 설정이 없으면 0이며, 이때는 병합 블록을 조립할 조각 프리팹도 없어 병합할 수 없다.
+    public int GetRemainingMerges(Block block)
+    {
+        if (block == null || settings == null)
+        {
+            return 0;
+        }
+
+        return BlockScore.GetRemainingMerges(block.MergeCount, settings.MaxMergeCount);
     }
 
     public Color GetColorForCore(int coreId)

@@ -10,7 +10,6 @@ public class BlockSaveData
     // 블록 종류 번호. 0이면 병합 블록이며 pieces 모양으로 다시 조립한다.
     public int blockId;
     public int core;
-    public int grade = 1;
     public int mergeCount;
     public string stat;
     // 옛 저장 파일의 스탯 수치. 새로 저장할 때는 쓰지 않고, 원본 점수가 없던 옛 파일을 변환할 때만 읽는다.
@@ -35,7 +34,6 @@ public class BlockSaveData
         {
             blockId = block.BlockId,
             core = block.Core,
-            grade = block.Grade,
             mergeCount = block.MergeCount,
             stat = block.Stat.Type.ToString(),
             skill = block.Skill.ToString(),

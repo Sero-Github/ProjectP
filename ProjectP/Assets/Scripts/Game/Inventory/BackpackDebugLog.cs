@@ -56,15 +56,15 @@ public static class BackpackDebugLog
             builder.Append($" | 스킬 {block.Skill}, 속성 {block.Element}, 스킬 점수 {skillScore.score}, 보너스 {bonusCount}회");
         }
 
-        builder.Append($" | 등급 {block.Grade}, 합 {block.MergeCount}, 남은 병합 {block.RemainingMerges}");
+        int remainingMerges = BlockManager.Instance != null ? BlockManager.Instance.GetRemainingMerges(block) : 0;
+        builder.Append($" | {block.MergeCount}합, 남은 병합 {remainingMerges}");
         builder.Append($" | 블록 점수 {block.Score} (원본 {block.BaseScore}, {block.EnhanceLevel}강)");
 
-        // 아직 게임에 적용하지 않은 V2 규칙으로 계산한 참고값. 다음 강 점수는 강화 기능이 생기기 전 확인용이다.
+        // 강화 기능이 생기기 전 확인용 참고값.
         if (settings != null)
         {
-            int v2Remaining = BlockScore.GetRemainingMerges(block.MergeCount, settings.MaxMergeCount);
             int nextEnhanceScore = BlockScore.Enhance(block.BaseScore, block.EnhanceLevel + 1, settings.EnhanceRatePercent);
-            builder.Append($" | V2 참고: 남은 병합 {v2Remaining}, {block.EnhanceLevel + 1}강이면 {nextEnhanceScore}");
+            builder.Append($" | 참고: {block.EnhanceLevel + 1}강이면 {nextEnhanceScore}");
         }
     }
 }
