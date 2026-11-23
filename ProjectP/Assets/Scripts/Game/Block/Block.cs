@@ -21,6 +21,13 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     // 속성 블록(core 1~7)만 사용한다. 스킬 점수는 병합할 때 합산된다.
     [SerializeField] private SkillType skill;
     [SerializeField] private int skillScore;
+    // 강화하지 않은(0강) 원본 점수. 🧱 블록 강화 4장의 "원본 점수(3합 0강)"이다.
+    // 드롭 블록은 칸 수 × 칸당 점수이고, 병합하면 두 블록의 원본 점수를 더한다.
+    [SerializeField, Min(0)] private int baseScore;
+    // 강화 수치(강).
+    [SerializeField, Min(0)] private int enhanceLevel;
+    // 최종 블록 점수 = 원본 점수에 강화 공식을 적용한 값. SetScore에서 계산하며, 직접 고치지 않는다.
+    [SerializeField, Min(0)] private int score;
     [SerializeField] private GameObject coreBlock;
     [SerializeField] private List<GameObject> pieces;
 
@@ -44,6 +51,9 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     public bool HasStat => core == 0;
     public SkillType Skill => skill;
     public int SkillScore => skillScore;
+    public int BaseScore => baseScore;
+    public int EnhanceLevel => enhanceLevel;
+    public int Score => score;
     public bool HasSkill => core != 0;
     // 속성 블록(core 1~7)의 속성. 스탯 블록은 None이다.
     public Element Element => (Element)core;
@@ -199,6 +209,15 @@ public class Block : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
     {
         skill = HasSkill ? skillType : SkillType.None;
         skillScore = HasSkill ? score : 0;
+    }
+
+    // 원본 점수와 강을 정하고, 1강당 증가율(%)로 최종 점수를 다시 계산한다.
+    // 블록은 설정 에셋을 모르므로 증가율은 BlockManager가 BlockSettings에서 넘겨준다.
+    public void SetScore(int blockBaseScore, int blockEnhanceLevel, int enhanceRatePercent)
+    {
+        baseScore = Mathf.Max(0, blockBaseScore);
+        enhanceLevel = Mathf.Max(0, blockEnhanceLevel);
+        score = BlockScore.Enhance(baseScore, enhanceLevel, enhanceRatePercent);
     }
 
     public void AttachTo(IBlockDropTarget target)

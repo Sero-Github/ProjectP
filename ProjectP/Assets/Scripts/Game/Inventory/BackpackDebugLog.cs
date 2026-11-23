@@ -51,13 +51,14 @@ public static class BackpackDebugLog
         }
 
         builder.Append($" | 등급 {block.Grade}, 합 {block.MergeCount}, 남은 병합 {block.RemainingMerges}");
+        builder.Append($" | 블록 점수 {block.Score} (원본 {block.BaseScore}, {block.EnhanceLevel}강)");
 
-        // V2 규칙으로 계산한 값. 병합 블록은 칸 수가 아니라 두 점수의 합이 V2 점수이므로 참고용이다.
+        // 아직 게임에 적용하지 않은 V2 규칙으로 계산한 참고값. 다음 강 점수는 강화 기능이 생기기 전 확인용이다.
         if (settings != null)
         {
-            int cellScore = BlockScore.FromCells(block.PieceCount, settings.ScorePerCell);
             int v2Remaining = BlockScore.GetRemainingMerges(block.MergeCount, settings.MaxMergeCount);
-            builder.Append($" | V2: 칸 점수 {cellScore}, 1강 {BlockScore.Enhance(cellScore, 1, settings.EnhanceRatePercent)}, 남은 병합 {v2Remaining}");
+            int nextEnhanceScore = BlockScore.Enhance(block.BaseScore, block.EnhanceLevel + 1, settings.EnhanceRatePercent);
+            builder.Append($" | V2 참고: 남은 병합 {v2Remaining}, {block.EnhanceLevel + 1}강이면 {nextEnhanceScore}");
         }
     }
 }

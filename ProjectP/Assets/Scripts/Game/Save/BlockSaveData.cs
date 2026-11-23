@@ -16,6 +16,10 @@ public class BlockSaveData
     public int statValue;
     public string skill;
     public int skillScore;
+    // 강화하지 않은 원본 블록 점수와 강. 최종 점수는 불러올 때 다시 계산한다.
+    // 이 필드가 없던 옛 저장 파일은 0으로 읽히며, BlockManager가 옛 값으로 바꿔 읽는다.
+    public int baseScore;
+    public int enhanceLevel;
     // 코어 칸을 (0,0)으로 하는 각 조각의 칸 오프셋. y는 아래쪽이 +이다.
     public List<Vector2Int> pieces = new List<Vector2Int>();
 
@@ -35,6 +39,8 @@ public class BlockSaveData
             statValue = block.Stat.Value,
             skill = block.Skill.ToString(),
             skillScore = block.SkillScore,
+            baseScore = block.BaseScore,
+            enhanceLevel = block.EnhanceLevel,
             pieces = new List<Vector2Int>(block.GetPieceOffsets()),
             inBackpack = inBackpack,
             cell = cell,
