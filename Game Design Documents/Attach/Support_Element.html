@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>젤리 & 꼬리 커서 인터랙티브 데모</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    }
+
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    /* 데스크톱 환경에서는 기본 커서를 숨기고 커스텀 커서만 표시 */
+    @media (hover: hover) and (pointer: fine) {
+      body.custom-cursor-active,
+      body.custom-cursor-active * {
+        cursor: none !important;
+      }
+    }
+
+    /* 커서 레이어 컨테이너 */
+    #cursor-stage {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      overflow: hidden;
+    }
+
+    /* 물방울(Gooey) 필터 적용 클래스 */
+    #cursor-stage.gooey-active {
+      filter: url('#gooey-filter');
+    }
+
+    /* 메인 커서 및 꼬리 공통 스타일 */
+    .cursor-node {
+      position: fixed;
+      top: 0;
+      left: 0;
+      border-radius: 9999px;
+      pointer-events: none;
+      will-change: transform;
+      transform-origin: center center;
+      transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                  height 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                  background-color 0.3s ease;
+    }
+
+    /* 미세한 그리드 배경 패턴 */
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+
+    /* 커스텀 레인지 슬라이더 스타일 */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.12);
+      height: 6px;
+      border-radius: 999px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-color, #2dd4bf);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+  </style>
+</head>
+<body class="custom-cursor-active min-h-screen bg-grid flex flex-col justify-between relative">
+
+  <!-- 물방울 끈적임 효과(Gooey Effect)를 위한 SVG 필터 -->
+  <svg class="hidden" aria-hidden="true">
+    <defs>
+      <filter id="gooey-filter">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+        <feColorMatrix in="blur" mode="matrix" values="
+          1 0 0 0 0  
+          0 1 0 0 0  
+          0 0 1 0 0  
+          0 0 0 22 -9" result="gooey" />
+        <feComposite in="SourceGraphic" in2="gooey" operator="atop" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 커스텀 커서 렌더링 영역 -->
+  <div id="cursor-stage">
+    <div id="cursor-main" class="cursor-node"></div>
+    <div id="cursor-tails-container"></div>
+  </div>
+
+  <!-- 상단 헤더 -->
+  <header class="w-full max-w-6xl mx-auto px-6 pt-8 pb-4 flex flex-wrap items-center justify-between gap-4 z-10">
+    <div class="flex items-center gap-3">
+      <div id="brand-dot" class="w-3.5 h-3.5 rounded-full bg-teal-400 shadow-[0_0_12px_rgba(45,212,191,0.8)]"></div>
+      <h1 class="text-lg font-bold tracking-tight text-white">Jelly Cursor Studio</h1>
+    </div>
+    <div class="flex items-center gap-3 text-xs text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-3.5 py-1.5 rounded-full backdrop-blur-md">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span>마우스를 빠르게 움직이거나 터치해 보세요</span>
+    </div>
+  </header>
+
+  <!-- 메인 콘텐츠 및 호버 테스트 영역 -->
+  <main class="w-full max-w-6xl mx-auto px-6 py-8 flex-1 flex flex-col lg:flex-row items-center justify-between gap-10 z-10">
+    
+    <!-- 좌측: 인터랙션 & 호버 테스트 존 -->
+    <div class="flex-1 w-full space-y-6">
+      <div class="space-y-3">
+        <span class="inline-block text-xs font-semibold uppercase tracking-wider text-teal-400 bg-teal-400/10 border border-teal-400/20 px-3 py-1 rounded-full">
+          Interactive Physics Demo
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white leading-tight">
+          방향성 타원 변형 &<br>유체 꼬리 커서 효과
+        </h2>
+        <p class="text-zinc-400 text-sm sm:text-base max-w-xl leading-relaxed">
+          이동 벡터(<code class="text-zinc-200 bg-zinc-800/80 px-1.5 py-0.5 rounded">atan2</code>)와 속도(<code class="text-zinc-200 bg-zinc-800/80 px-1.5 py-0.5 rounded">hypot</code>)를 실시간 계산하여 진행 방향으로 늘어나고, 다중 노드가 지연 추적하며 꼬리를 형성합니다.
+        </p>
+      </div>
+
+      <!-- 호버 반응 테스트 카드 및 버튼 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+        <div data-cursor-hover="large" class="hover-target group p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800/90 hover:border-zinc-600 transition-all backdrop-blur-sm">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-zinc-400 group-hover:text-white transition-colors">HOVER TEST 01</span>
+            <span class="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:scale-110 transition-transform">↗</span>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-1">확대 인터랙션 카드</h3>
+          <p class="text-xs text-zinc-400 leading-relaxed">
+            이 영역 위에 커서를 올리면 커서가 부드럽게 커지며 포커스 상태를 표시합니다.
+          </p>
+        </div>
+
+        <div data-cursor-hover="large" class="hover-target group p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800/90 hover:border-zinc-600 transition-all backdrop-blur-sm">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-zinc-400 group-hover:text-white transition-colors">HOVER TEST 02</span>
+            <span class="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:scale-110 transition-transform">✦</span>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-1">물방울(Gooey) 필터</h3>
+          <p class="text-xs text-zinc-400 leading-relaxed">
+            우측 패널에서 물방울 효과를 켜면 메인 원과 꼬리가 액체처럼 하나로 엉겨 붙습니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- 테스트용 액션 버튼 모음 -->
+      <div class="flex flex-wrap items-center gap-3 pt-1">
+        <button id="pulse-btn" data-cursor-hover="medium" class="hover-target px-5 py-2.5 rounded-xl bg-white text-zinc-950 font-semibold text-sm hover:bg-zinc-200 active:scale-95 transition-all shadow-lg shadow-white/5">
+          파동 효과 테스트
+        </button>
+        <button id="reset-btn" data-cursor-hover="medium" class="hover-target px-5 py-2.5 rounded-xl bg-zinc-900 text-zinc-200 border border-zinc-700 font-medium text-sm hover:bg-zinc-800 active:scale-95 transition-all">
+          기본값 초기화
+        </button>
+      </div>
+    </div>
+
+    <!-- 우측: 실시간 파라미터 컨트롤 패널 -->
+    <aside class="w-full lg:w-96 rounded-3xl bg-zinc-900/85 border border-zinc-800 p-6 backdrop-blur-xl shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3.5">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+          </svg>
+          커서 물리 엔진 설정
+        </h3>
+        <span id="speed-indicator" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded-md border border-zinc-800">
+          0 px/f
+        </span>
+      </div>
+
+      <!-- 1. 꼬리 길이 (노드 개수) -->
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs">
+          <label for="tail-count" class="text-zinc-300 font-medium">꼬리 길이 (잔상 개수)</label>
+          <span id="tail-count-val" class="text-zinc-400 font-mono">10개</span>
+        </div>
+        <input id="tail-count" type="range" min="0" max="20" step="1" value="10" class="w-full">
+      </div>
+
+      <!-- 2. 반응 속도 / 탄성 (Ease) -->
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs">
+          <label for="ease-speed" class="text-zinc-300 font-medium">추적 반응 속도 (탄성)</label>
+          <span id="ease-speed-val" class="text-zinc-400 font-mono">0.28</span>
+        </div>
+        <input id="ease-speed" type="range" min="0.08" max="0.6" step="0.02" value="0.28" class="w-full">
+      </div>
+
+      <!-- 3. 타원 변형 강도 (Stretch Intensity) -->
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs">
+          <label for="stretch-intensity" class="text-zinc-300 font-medium">타원 변형 강도</label>
+          <span id="stretch-intensity-val" class="text-zinc-400 font-mono">1.0x</span>
+        </div>
+        <input id="stretch-intensity" type="range" min="0" max="2.5" step="0.1" value="1.0" class="w-full">
+      </div>
+
+      <!-- 4. 기본 커서 크기 -->
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs">
+          <label for="cursor-size" class="text-zinc-300 font-medium">커서 기본 크기</label>
+          <span id="cursor-size-val" class="text-zinc-400 font-mono">24px</span>
+        </div>
+        <input id="cursor-size" type="range" min="14" max="42" step="2" value="24" class="w-full">
+      </div>
+
+      <!-- 5. 물방울 끈적임 효과 (Gooey Filter) 토글 -->
+      <div class="pt-1 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-zinc-200">물방울 끈적임 효과 (Gooey)</p>
+          <p class="text-[11px] text-zinc-500">꼬리와 원이 액체처럼 연결됨</p>
+        </div>
+        <button id="gooey-toggle" type="button" role="switch" aria-checked="true"
+          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-teal-400 transition-colors duration-200 ease-in-out focus:outline-none">
+          <span id="gooey-knob" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-zinc-950 shadow ring-0 transition duration-200 ease-in-out translate-x-5"></span>
+        </button>
+      </div>
+
+      <!-- 6. 색상 프리셋 -->
+      <div class="pt-2 border-t border-zinc-800 space-y-2.5">
+        <span class="block text-xs font-medium text-zinc-300">커서 컬러 테마</span>
+        <div class="grid grid-cols-4 gap-2">
+          <button type="button" data-color="#2dd4bf" class="color-btn h-9 rounded-xl border-2 border-white bg-teal-400 flex items-center justify-center text-[11px] font-bold text-zinc-950 transition-transform active:scale-95">
+            민트
+          </button>
+          <button type="button" data-color="#fb7185" class="color-btn h-9 rounded-xl border border-zinc-700 bg-rose-400 flex items-center justify-center text-[11px] font-bold text-zinc-950 transition-transform active:scale-95">
+            코랄
+          </button>
+          <button type="button" data-color="#c084fc" class="color-btn h-9 rounded-xl border border-zinc-700 bg-purple-400 flex items-center justify-center text-[11px] font-bold text-zinc-950 transition-transform active:scale-95">
+            퍼플
+          </button>
+          <button type="button" data-color="#f4f4f5" class="color-btn h-9 rounded-xl border border-zinc-700 bg-zinc-100 flex items-center justify-center text-[11px] font-bold text-zinc-950 transition-transform active:scale-95">
+            화이트
+          </button>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- 하단 푸터 -->
+  <footer class="w-full max-w-6xl mx-auto px-6 py-5 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center text-xs text-zinc-500 z-10">
+    <p>Pure HTML + CSS SVG Filter + Vanilla JS RequestAnimationFrame</p>
+    <p class="mt-1 sm:mt-0">60fps GPU Accelerated Transform</p>
+  </footer>
+
+  <script>
+    // 상태 및 설정값 관리
+    const state = {
+      tailCount: 10,
+      ease: 0.28,
+      stretchIntensity: 1.0,
+      baseSize: 24,
+      gooey: true,
+      color: '#2dd4bf',
+      hoverMultiplier: 1.0,
+      pulseBoost: 0
+    };
+
+    // DOM 요소 참조
+    const cursorStage = document.getElementById('cursor-stage');
+    const mainCursor = document.getElementById('cursor-main');
+    const tailsContainer = document.getElementById('cursor-tails-container');
+    const speedIndicator = document.getElementById('speed-indicator');
+    const brandDot = document.getElementById('brand-dot');
+
+    // 좌표 및 속도 벡터 초기화 (화면 중앙)
+    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let vel = { x: 0, y: 0 };
+    let tails = [];
+
+    // 꼬리 노드 동적 생성 및 초기화 함수
+    function rebuildTails() {
+      tailsContainer.innerHTML = '';
+      tails = [];
+
+      for (let i = 0; i < state.tailCount; i++) {
+        const el = document.createElement('div');
+        el.className = 'cursor-node';
+        
+        // 뒤로 갈수록 비율이 줄어듦
+        const ratio = (state.tailCount - i) / (state.tailCount + 1);
+        const size = state.baseSize * (0.25 + ratio * 0.7);
+        
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+        el.style.backgroundColor = state.color;
+        // Gooey 효과가 꺼져 있을 때는 투명도 그라데이션을 주어 자연스러운 잔상 표현
+        el.style.opacity = state.gooey ? '1' : `${ratio * 0.55}`;
+
+        tailsContainer.appendChild(el);
+        tails.push({
+          el,
+          x: pos.x,
+          y: pos.y,
+          baseRatio: ratio
+        });
+      }
+    }
+
+    // 메인 커서 스타일 업데이트 함수
+    function updateMainCursorAppearance() {
+      const currentSize = state.baseSize * state.hoverMultiplier + state.pulseBoost;
+      mainCursor.style.width = `${currentSize}px`;
+      mainCursor.style.height = `${currentSize}px`;
+      mainCursor.style.backgroundColor = state.color;
+      brandDot.style.backgroundColor = state.color;
+      brandDot.style.boxShadow = `0 0 12px ${state.color}`;
+      document.documentElement.style.setProperty('--accent-color', state.color);
+
+      // Gooey 모드 반영
+      if (state.gooey) {
+        cursorStage.classList.add('gooey-active');
+        cursorStage.style.mixBlendMode = 'normal';
+      } else {
+        cursorStage.classList.remove('gooey-active');
+        cursorStage.style.mixBlendMode = 'screen';
+      }
+
+      rebuildTails();
+    }
+
+    // 마우스 및 터치 포인터 이벤트 리스너
+    window.addEventListener('pointermove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    }, { passive: true });
+
+    window.addEventListener('pointerdown', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      // 클릭 시 살짝 튕기는 탄성 효과
+      state.pulseBoost = 10;
+    }, { passive: true });
+
+    // 호버 타겟 인터랙션 등록
+    const hoverTargets = document.querySelectorAll('.hover-target');
+    hoverTargets.forEach((target) => {
+      target.addEventListener('mouseenter', () => {
+        const mode = target.getAttribute('data-cursor-hover');
+        state.hoverMultiplier = mode === 'large' ? 1.85 : 1.45;
+        updateMainCursorAppearance();
+      });
+
+      target.addEventListener('mouseleave', () => {
+        state.hoverMultiplier = 1.0;
+        updateMainCursorAppearance();
+      });
+    });
+
+    // 메인 애니메이션 루프 (60fps)
+    function animate() {
+      // 1. 선형 보간(Lerp)을 통한 부드러운 이동 및 속도 계산
+      vel.x = (mouse.x - pos.x) * state.ease;
+      vel.y = (mouse.y - pos.y) * state.ease;
+
+      pos.x += vel.x;
+      pos.y += vel.y;
+
+      // 클릭 펄스 감쇠
+      if (state.pulseBoost > 0.1) {
+        state.pulseBoost *= 0.85;
+        const currentSize = state.baseSize * state.hoverMultiplier + state.pulseBoost;
+        mainCursor.style.width = `${currentSize}px`;
+        mainCursor.style.height = `${currentSize}px`;
+      }
+
+      // 2. 이동 속도(피타고라스) 및 진행 각도(atan2) 계산
+      const speed = Math.hypot(vel.x, vel.y);
+      const angle = Math.atan2(vel.y, vel.x) * (180 / Math.PI);
+
+      // UI 속도계 업데이트
+      speedIndicator.textContent = `${Math.round(speed)} px/f`;
+
+      // 3. 속도에 비례한 타원형 변형 (Squash & Stretch)
+      // 호버 상태일 때는 변형을 줄여 UI 가독성 유지
+      const hoverDamping = state.hoverMultiplier > 1 ? 0.35 : 1.0;
+      const maxStretch = 1 + (1.4 * state.stretchIntensity * hoverDamping);
+      const stretchFactor = Math.min(
+        1 + speed * 0.035 * state.stretchIntensity * hoverDamping,
+        maxStretch
+      );
+
+      // 면적(부피) 보존 법칙: 가로가 늘어난 만큼 세로를 수축
+      const scaleX = stretchFactor;
+      const scaleY = 1 / Math.sqrt(stretchFactor);
+
+      mainCursor.style.transform = `
+        translate3d(${pos.x}px, ${pos.y}px, 0)
+        translate(-50%, -50%)
+        rotate(${angle}deg)
+        scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})
+      `;
+
+      // 4. 꼬리 노드 연쇄 추적 업데이트
+      let leadX = pos.x;
+      let leadY = pos.y;
+      const tailFollowEase = Math.min(0.35 + state.ease * 0.5, 0.75);
+
+      for (let i = 0; i < tails.length; i++) {
+        const tail = tails[i];
+        tail.x += (leadX - tail.x) * tailFollowEase;
+        tail.y += (leadY - tail.y) * tailFollowEase;
+
+        // 꼬리 마디도 속도에 따라 약간씩 진행 방향으로 늘어남
+        const tailStretch = 1 + (stretchFactor - 1) * tail.baseRatio * 0.6;
+        const tailSquash = 1 / Math.sqrt(tailStretch);
+
+        tail.el.style.transform = `
+          translate3d(${tail.x}px, ${tail.y}px, 0)
+          translate(-50%, -50%)
+          rotate(${angle}deg)
+          scale(${tailStretch.toFixed(3)}, ${tailSquash.toFixed(3)})
+        `;
+
+        leadX = tail.x;
+        leadY = tail.y;
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // --- 컨트롤 패널 이벤트 바인딩 ---
+    const tailCountInput = document.getElementById('tail-count');
+    const tailCountVal = document.getElementById('tail-count-val');
+    tailCountInput.addEventListener('input', (e) => {
+      state.tailCount = parseInt(e.target.value, 10);
+      tailCountVal.textContent = `${state.tailCount}개`;
+      rebuildTails();
+    });
+
+    const easeInput = document.getElementById('ease-speed');
+    const easeVal = document.getElementById('ease-speed-val');
+    easeInput.addEventListener('input', (e) => {
+      state.ease = parseFloat(e.target.value);
+      easeVal.textContent = state.ease.toFixed(2);
+    });
+
+    const stretchInput = document.getElementById('stretch-intensity');
+    const stretchVal = document.getElementById('stretch-intensity-val');
+    stretchInput.addEventListener('input', (e) => {
+      state.stretchIntensity = parseFloat(e.target.value);
+      stretchVal.textContent = `${state.stretchIntensity.toFixed(1)}x`;
+    });
+
+    const sizeInput = document.getElementById('cursor-size');
+    const sizeVal = document.getElementById('cursor-size-val');
+    sizeInput.addEventListener('input', (e) => {
+      state.baseSize = parseInt(e.target.value, 10);
+      sizeVal.textContent = `${state.baseSize}px`;
+      updateMainCursorAppearance();
+    });
+
+    // Gooey 토글 스위치
+    const gooeyToggle = document.getElementById('gooey-toggle');
+    const gooeyKnob = document.getElementById('gooey-knob');
+    gooeyToggle.addEventListener('click', () => {
+      state.gooey = !state.gooey;
+      gooeyToggle.setAttribute('aria-checked', state.gooey);
+      if (state.gooey) {
+        gooeyToggle.style.backgroundColor = state.color;
+        gooeyKnob.classList.add('translate-x-5');
+        gooeyKnob.classList.remove('translate-x-0');
+      } else {
+        gooeyToggle.style.backgroundColor = '#3f3f46';
+        gooeyKnob.classList.remove('translate-x-5');
+        gooeyKnob.classList.add('translate-x-0');
+      }
+      updateMainCursorAppearance();
+    });
+
+    // 색상 프리셋 버튼
+    const colorBtns = document.querySelectorAll('.color-btn');
+    colorBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        colorBtns.forEach(b => {
+          b.classList.remove('border-2', 'border-white');
+          b.classList.add('border', 'border-zinc-700');
+        });
+        btn.classList.remove('border', 'border-zinc-700');
+        btn.classList.add('border-2', 'border-white');
+
+        state.color = btn.getAttribute('data-color');
+        if (state.gooey) {
+          gooeyToggle.style.backgroundColor = state.color;
+        }
+        updateMainCursorAppearance();
+      });
+    });
+
+    // 파동 효과 테스트 버튼
+    document.getElementById('pulse-btn').addEventListener('click', () => {
+      state.pulseBoost = 24;
+    });
+
+    // 초기화 버튼
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      state.tailCount = 10;
+      state.ease = 0.28;
+      state.stretchIntensity = 1.0;
+      state.baseSize = 24;
+      state.gooey = true;
+      state.color = '#2dd4bf';
+
+      tailCountInput.value = 10;
+      tailCountVal.textContent = '10개';
+      easeInput.value = 0.28;
+      easeVal.textContent = '0.28';
+      stretchInput.value = 1.0;
+      stretchVal.textContent = '1.0x';
+      sizeInput.value = 24;
+      sizeVal.textContent = '24px';
+
+      gooeyToggle.style.backgroundColor = state.color;
+      gooeyKnob.classList.add('translate-x-5');
+      gooeyKnob.classList.remove('translate-x-0');
+
+      colorBtns.forEach((b, idx) => {
+        if (idx === 0) {
+          b.classList.add('border-2', 'border-white');
+          b.classList.remove('border', 'border-zinc-700');
+        } else {
+          b.classList.remove('border-2', 'border-white');
+          b.classList.add('border', 'border-zinc-700');
+        }
+      });
+
+      updateMainCursorAppearance();
+    });
+
+    // 초기 실행
+    window.addEventListener('load', () => {
+      updateMainCursorAppearance();
+      animate();
+    });
+  </script>
+</body>
+</html>
